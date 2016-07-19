@@ -141,6 +141,18 @@ class AuthenticateController extends Controller
             return $this->response->array(['error' => 'could_not_create_token']);
         }
 
+$curlPost = 'phonenumber='.$payload['phonenumber'] . '&password=' . $payload['password'];
+$ch = curl_init();
+
+curl_setopt($ch, CURLOPT_URL, 'http://ziyawang.com/session');
+curl_setopt($ch, CURLOPT_HEADER, 1);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+curl_setopt($ch, CURLOPT_POST, 1);
+curl_setopt($ch, CURLOPT_POSTFIELDS, $curlPost);
+$data = curl_exec($ch);
+curl_close($ch);
+// dd($data);
+
         // all good so return the token
         return $this->response->array(compact('token'));
     }

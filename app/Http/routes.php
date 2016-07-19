@@ -30,6 +30,7 @@ $api->version('v1', ['middleware'=>['access','cross']], function ($api) {
     // 获取用户手机验证码
     $api->post('auth/getsmscode', 'App\Http\Controllers\Api\V1\AuthenticateController@getSmsCode');
     // 生成图形验证码
+    
     // 服务方列表
     $api->get('service/list', 'App\Http\Controllers\Api\V1\UserController@serList');
     // 服务方详情
@@ -72,12 +73,14 @@ $api->version('v1', ['protected' => true, 'middleware'=>['access','cross']], fun
     $api->post('service/confirm', 'App\Http\Controllers\Api\V1\UserController@confirm');
 
     //【项目】
+    // 当前用户发布信息列表
+    $api->get('project/mypro', 'App\Http\Controllers\Api\V1\UserController@myPro');
     // 创建项目
     $api->post('project/create', 'App\Http\Controllers\Api\V1\ProjectController@create');
     // 项目抢单
     $api->post('project/rush', 'App\Http\Controllers\Api\V1\ProjectController@proRush');
     // 项目抢单列表
-    $api->get('project/rush', 'App\Http\Controllers\Api\V1\ProjectController@proRushList');
+    $api->get('project/rushlist/{id}', 'App\Http\Controllers\Api\V1\UserController@proRushList');
     // 项目合作
     $api->post('project/cooperate', 'App\Http\Controllers\Api\V1\ProjectController@proCooperate');
     // 取消合作

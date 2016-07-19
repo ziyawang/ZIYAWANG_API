@@ -10,7 +10,9 @@
         "dingo/api": "0.9.*@dev",
         "pingplusplus/pingpp-php": "dev-master",
         "tymon/jwt-auth": "0.5.*",
-        "nette/mail": "^2.4"
+        "nette/mail": "^2.4",
+        "vergil-lai/uc-client": "dev-master",
+        "doctrine/dbal": "^2.5"
     },
     "require-dev": {
         "fzaninotto/faker": "~1.4",

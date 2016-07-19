@@ -15,9 +15,28 @@ use App\Service;
 use Cache;
 use Tymon\users\Exceptions\JWTException;
 use DB;
+use App\Project;
 
 class UserController extends BaseController
 {
+    /**
+    *获取服务商列表
+    *
+    */
+    public function serList()
+    {
+        $payload = app('request')->all();
+        $startpage = isset($payload['startpage']) ?  $payload['startpage'] : 1;
+        $pagecount = isset($payload['pagecount']) ?  $payload['pagecount'] : 5;
+        $skipnum = ($startpage-1)*$pagecount;
+        $ServiceType = isset($payload['ServiceType']) ?  $payload['ServiceType'] : null;
+        $ServiceArea = isset($payload['ServiceArea']) ?  $payload['ServiceArea'] : null;
+        $where = ['ServiceType'=>$ServiceType, 'ServiceArea'=>$ServiceArea];
+
+        $services = Service::skip($skipnum)->take($pagecount)->get()->toArray();
+        dd($services);
+    }
+
     /**
      * 获取用户信息
      *
@@ -70,5 +89,63 @@ class UserController extends BaseController
         } else {
             return $this->response->array(['error' => 'Password Change Error']);
         }
+    }
+
+    /**
+    *用户发布信息
+    *
+    *
+    */
+    public function myPro()
+    {
+        $PROJECT = new ProjectController();
+        $UserID = $this->auth->user()->toArray()['userid'];
+        $where = ['UserID'=>$UserID, 'CertifyState'=>0, 'DeleteFlag'=>0];
+
+        $projects = Project::where($where)->lists('ProjectID');
+        $data = [];
+        foreach ($projects as $pro) {
+            $item = $PROJECT->getInfo($pro);
+            $data[] = $item;
+        }
+        dd($data);
+    }
+
+
+    /**
+     * 抢单列表
+     *
+     * @param Request $request
+     */
+    public function proRushList($id) {
+        $lists = DB::table('T_P_RUSHPROJECT')->where('ProjectID',$id)->lists('ServiceID');
+        dd($lists);
+        $ServiceID = $this->auth->user()->toArray()['userid'];
+
+        
+        return '抢单成功';
+    }
+
+    /**
+     * 确认合作
+     *
+     * @param Request $request
+     */
+    public function proCooperate() {
+        $payload = app('request')->all();
+        $projectId = $payload['projectid'];
+        $serviceId = $this->auth->user()->toArray()['userid'];
+    }
+
+    /**
+     * 取消合作
+     *
+     * @param Request $request
+     */
+    public function proCancel() {
+        $payload = app('request')->all();
+        $projectId = $payload['projectid'];
+        $serviceId = $serviceId;
+
     }
 }

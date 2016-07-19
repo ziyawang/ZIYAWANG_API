@@ -15,16 +15,19 @@ use Cache;
 use Tymon\users\Exceptions\JWTException;
 use DB;
 
-class ToolController extends Controller
+class ToolController extends BaseController
 {
     /**
      * 收藏
      *
      * @return mixed
      */
-    public function collect($type, $itemID)
+    public function collect()
     {   
-        $UserID = $this->auth->user()->UserID;
+        $payload = app('request')->all();
+        $type = $payload['type'];
+        $itemID = $payload['itemID'];
+        $UserID = $this->auth->user()->toArray()['userid'];
         $res = DB::table('T_P_COLLECTION')->insert([
                 'Type'=>$type,
                 'CollectTime' => date('Y-m-d H:i:s',time()),
@@ -37,28 +40,30 @@ class ToolController extends Controller
                 //默认1：项目，2：视频，3：新闻资讯，4：服务方
                 case '1':
                     $table = 'T_P_PROJECTINFO';
+                    $pk = 'ProjectID';
                     break;
                 
                 case '2':
                     $table = 'T_V_VIDEOINFO';
+                    $pk = 'VideoID';
                     break;
 
                 case '3':
                     $table = 'T_N_NEWSINFO';
+                    $pk = 'NewsID';
                     break;
 
                 case '4':
                     $table = 'T_U_SERVICEINFO';
+                    $pk = 'ServiceID';
                     break;
             }
 
-            $item = DB::table("$table")->find("$itemID");
-            $item->CollectCount += 1;
-            $item->save();
+            $item = DB::table("$table")->where($pk,$itemID)->increment('CollectionCount');
 
-            $this->response->array('collect success');
+            return $this->response->array('collect success');
         } else {
-            $this->response->array('collect error');
+            return $this->response->array('collect error');
         }
     }
 
