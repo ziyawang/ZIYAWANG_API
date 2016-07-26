@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use Closure;
+use Illuminate\Support\Facades\Input;
 
 class Access
 {
@@ -21,7 +22,7 @@ class Access
         if($access != $access_token){
             $data = [
                 'errcode'=>4050,
-                'errmsg'=>'access_token不可用'
+                'errmsg'=>'Access Denied!'
             ];
 
             return json_encode($data);

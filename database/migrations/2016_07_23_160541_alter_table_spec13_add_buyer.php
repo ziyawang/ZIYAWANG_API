@@ -3,7 +3,7 @@
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class AlterTableRoleauthChangeAuthid extends Migration
+class AlterTableSpec13AddBuyer extends Migration
 {
     /**
      * Run the migrations.
@@ -12,8 +12,8 @@ class AlterTableRoleauthChangeAuthid extends Migration
      */
     public function up()
     {
-        Schema::table('T_AS_ROLEAUTH', function (Blueprint $table) {
-            // $table->string('AuthID',256)->change();
+        Schema::table('T_P_SPEC13', function (Blueprint $table) {
+            $table->string('Buyer',128)->comment('求购方');
         });
     }
 
@@ -24,8 +24,8 @@ class AlterTableRoleauthChangeAuthid extends Migration
      */
     public function down()
     {
-        Schema::table('T_AS_ROLEAUTH', function (Blueprint $table) {
-            // $table->integer('AuthID')->change();
+        Schema::table('T_P_SPEC13', function (Blueprint $table) {
+            $table->dropColumn('Buyer');
         });
     }
 }

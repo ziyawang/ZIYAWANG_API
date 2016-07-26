@@ -3,7 +3,7 @@
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class AlterTableRoleauthChangeAuthid extends Migration
+class AlterTableVideoinfoAddVideolink2 extends Migration
 {
     /**
      * Run the migrations.
@@ -12,8 +12,8 @@ class AlterTableRoleauthChangeAuthid extends Migration
      */
     public function up()
     {
-        Schema::table('T_AS_ROLEAUTH', function (Blueprint $table) {
-            // $table->string('AuthID',256)->change();
+        Schema::table('T_V_VIDEOINFO', function (Blueprint $table) {
+            $table->string('VideoLink2',256)->comment('移动端视频播放地址');
         });
     }
 
@@ -24,8 +24,8 @@ class AlterTableRoleauthChangeAuthid extends Migration
      */
     public function down()
     {
-        Schema::table('T_AS_ROLEAUTH', function (Blueprint $table) {
-            // $table->integer('AuthID')->change();
+        Schema::table('T_V_VIDEOINFO', function (Blueprint $table) {
+            $table->dropColumn('VideoLink2');
         });
     }
 }

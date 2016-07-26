@@ -40,15 +40,15 @@ class AuthenticateController extends Controller
            $smscode = Cache::get($payload['phonenumber']);
         
            if ($smscode != $payload['smscode']) {
-               return $this->response->array(['error' => 'phonenumber smscode error']);
+               return $this->response->array(['status_code' => '402', 'msg' => 'phonenumber smscode error']);//402 手机或者验证码错误，401数据格式验证不通过，501服务端错误，403手机验证码发送失败,404登录失败
            }
         } else {
-           return $this->response->array(['error' => 'phonenumber smscode error']);
+           return $this->response->array(['status_code' => '402', 'msg' => 'phonenumber smscode error']);
         }
 
         // 验证格式
         if ($validator->fails()) {
-            return $this->response->array(['error' => $validator->errors()]);
+            return $this->response->array(['status_code' => '401', 'msg' => $validator->errors()]);
         }
 
         // 创建用户
@@ -70,22 +70,82 @@ class AuthenticateController extends Controller
             //生成token
             $user = User::where('phonenumber', $payload['phonenumber'])->first();
             $token = JWTAuth::fromUser($user);
-            return $this->response->array(['success' => 'Create User Success', 'token' => $token]);
+            return $this->response->array(['status_code' => '200', 'msg' => 'Create User Success', 'token' => $token]);
         } else {
-            return $this->response->array(['error' => 'Create User Error']);
+            return $this->response->array(['status_code' => '501', 'msg' => 'Create User Error']);
         }
     }
 
     /**
-     * 获取用户手机验证码
-     */
+    * 找回密码
+    * 
+    */
+    public function resetPassword()
+    {
+        // 验证规则
+        $rules = [
+            'phonenumber' => ['required', 'min:11', 'max:11'],
+            'password' => ['required', 'min:6'],
+            'smscode' => ['required', 'min:6']
+        ];
+
+        $payload = app('request')->only('phonenumber', 'password', 'smscode');
+        $validator = app('validator')->make($payload, $rules);
+
+        // 手机验证码验证
+        if (Cache::has($payload['phonenumber'])) {
+           $smscode = Cache::get($payload['phonenumber']);
+        
+           if ($smscode != $payload['smscode']) {
+               return $this->response->array(['status_code' => '402', 'msg' => 'phonenumber smscode error']);
+           }
+        } else {
+           return $this->response->array(['status_code' => '402', 'msg' => 'phonenumber smscode error']);
+        }
+
+        // 验证格式
+        if ($validator->fails()) {
+            return $this->response->array(['status_code' => '401', 'msg' => $validator->errors()]);
+        }
+
+        $user = User::where('phonenumber', $payload['phonenumber'])->first();
+        $user->password = bcrypt($payload['password']);
+        $res = $user->save();
+
+        // 发送结果
+        if ($res) {
+            // 通过用户实例，获取jwt-token
+            $token = JWTAuth::fromUser($user);
+            return $this->response->array(['status_code' => '200', 'token' => $token]);
+        } else {
+            return $this->response->array(['status_code' => '504', 'msg' => 'Password Change Error']);
+        }
+    }
+
+    /**
+    * 获取用户手机验证码
+    */
     public function getSmsCode()
     {
         // 获取手机号码
         $payload = app('request')->only('phonenumber');
         $phonenumber = $payload['phonenumber'];
 
-        if(empty($phonenumber)) return $this->response->array(['error' => 'Send Sms Error']);
+        $action = app('request')->get('action');
+        if ($action == 'register') {
+            $user = User::where('phonenumber', $payload['phonenumber'])->first();
+            if($user) {
+                return $this->response->array(['status_code' => '405', 'msg' => 'phonenumber is exist']);
+            }
+        } elseif ($action == 'login') {
+            $user = User::where('phonenumber', $payload['phonenumber'])->first();
+            if(!$user) {
+                return $this->response->array(['status_code' => '406', 'msg' => 'phonenumber does not exist']);
+            }
+        } else {
+            return $this->response->array(['status_code' => '401', 'msg' => 'lose argument action']);
+        }
+
 
         // 获取验证码
         $randNum = $this->__randStr(6, 'NUMBER');
@@ -99,13 +159,13 @@ class AuthenticateController extends Controller
         // $smsTxt = '验证码为：' . $randNum . '，请在 10 分钟内使用！';
 
         // 发送验证码短信
-        $res = $this->_sendSms($phonenumber, $randNum);
+        $res = $this->_sendSms($phonenumber, $randNum, $action);
 
         // 发送结果
         if ($res) {
-            return $this->response->array(['success' => 'Send Sms Success']);
+            return $this->response->array(['status_code' => '200', 'msg' => 'Send Sms Success']);
         } else {
-            return $this->response->array(['error' => 'Send Sms Error']);
+            return $this->response->array(['status_code' => '503', 'msg' => 'Send Sms Error']);
         }
     }
 
@@ -117,44 +177,40 @@ class AuthenticateController extends Controller
      */
     public function authenticate(Request $request)
     {   
-        require('/org/code/Code.class.php');
         // 验证规则
         $rules = [
             'phonenumber' => ['required', 'min:11', 'max:11'],
             'password' => ['required', 'min:6'],
         ];
 
+        //验证格式
         $payload = app('request')->only('phonenumber', 'password');
         $validator = app('validator')->make($payload, $rules);
 
+        //验证手机号是否存在
+        $user = User::where('phonenumber', $payload['phonenumber'])->first();
+        if(!$user) {
+            return $this->response->array(['status_code' => '406', 'msg' => 'phonenumber does not exist']);
+        }
+
         // grab credentials from the request
         $credentials = $request->only('phonenumber', 'password');
+
 
         try {
             // attempt to verify the credentials and create a token for the user
             if (!$token = JWTAuth::attempt($credentials)) {
                 // return response()->json(['error' => 'invalid_credentials'], 401);
-                return $this->response->array(['error' => 'invalid_credentials']);
+                return $this->response->array(['status_code' => '404', 'msg' => 'invalid_credentials']);
             }
         } catch (JWTException $e) {
             // something went wrong whilst attempting to encode the token
-            return $this->response->array(['error' => 'could_not_create_token']);
+            return $this->response->array(['status_code' => '502', 'msg' => 'could_not_create_token']);
         }
 
-$curlPost = 'phonenumber='.$payload['phonenumber'] . '&password=' . $payload['password'];
-$ch = curl_init();
-
-curl_setopt($ch, CURLOPT_URL, 'http://ziyawang.com/session');
-curl_setopt($ch, CURLOPT_HEADER, 1);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-curl_setopt($ch, CURLOPT_POST, 1);
-curl_setopt($ch, CURLOPT_POSTFIELDS, $curlPost);
-$data = curl_exec($ch);
-curl_close($ch);
-// dd($data);
 
         // all good so return the token
-        return $this->response->array(compact('token'));
+        return $this->response->array(['status_code' => '200', 'token' => $token]);
     }
 
     /**
@@ -188,12 +244,12 @@ curl_close($ch);
         //验证手机号是否存在
         $user = User::where('phonenumber', $payload['phonenumber'])->first();
         if(!$user) {
-            return $this->response->array(['error' => 'phonenumber does not exist']);
+            return $this->response->array(['status_code' => '404', 'msg' => 'phonenumber does not exist']);
         }
 
         // 验证格式
         if ($validator->fails()) {
-            return $this->response->array(['error' => $validator->errors()]);
+            return $this->response->array(['status_code' => '401', 'msg' => $validator->errors()]);
         }
 
         // 手机验证码验证
@@ -201,15 +257,15 @@ curl_close($ch);
            $smscode = Cache::get($payload['phonenumber']);
         
            if ($smscode != $payload['smscode']) {
-               return $this->response->array(['error' => 'phonenumber smscode error']);
+               return $this->response->array(['status_code' => '404', 'msg' => 'phonenumber smscode error']);
            }
         } else {
-           return $this->response->array(['error' => 'phonenumber smscode error']);
+           return $this->response->array(['status_code' => '404', 'msg' => 'phonenumber smscode error']);
         }
 
         // 通过用户实例，获取jwt-token
         $token = JWTAuth::fromUser($user);
-        return $this->response->array(compact('token'));
+        return $this->response->array(['status_code' => '200', 'token' => $token]);
     }
 
     /**

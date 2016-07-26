@@ -25,7 +25,7 @@ abstract class Controller extends BaseController
     }
 
     // 发送短信
-    protected function _sendSms($mobile, $message)
+    protected function _sendSms($mobile, $message, $action)
     {
         require(base_path().'/vendor/alidayu/TopSdk.php');
         date_default_timezone_set('Asia/Shanghai');
@@ -37,10 +37,14 @@ abstract class Controller extends BaseController
         $req = new \AlibabaAliqinFcSmsNumSendRequest;
         $req->setExtend("");//暂时不填
         $req->setSmsType("normal");//默认可用
-        $req->setSmsFreeSignName("注册验证");//设置短信免费符号名(需在阿里认证中有记录的)
-        $req->setSmsParam("{\"code\":\"{$message}\",\"product\":\"资芽网\"}");//设置短信参数
+        $req->setSmsFreeSignName("资芽网");//设置短信免费符号名(需在阿里认证中有记录的)
+        $req->setSmsParam("{\"code\":\"{$message}\"}");//设置短信参数
         $req->setRecNum($mobile);//设置接受手机号
-        $req->setSmsTemplateCode("SMS_11745050");//设置模板
+        if($action == 'register'){
+            $req->setSmsTemplateCode("SMS_12660435");//设置模板
+        } elseif($action == 'login') {
+            $req->setSmsTemplateCode("SMS_12670230");//设置模板
+        }
         $resp = $c->execute($req);//执行
 
         if($resp->result->success)

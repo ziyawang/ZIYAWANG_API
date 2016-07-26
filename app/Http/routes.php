@@ -27,6 +27,8 @@ $api->version('v1', ['middleware'=>['access','cross']], function ($api) {
     $api->post('auth/login', 'App\Http\Controllers\Api\V1\AuthenticateController@authenticate');
     // 忘记密码，使用手机验证码登录，并返回 Token
     $api->post('auth/smslogin', 'App\Http\Controllers\Api\V1\AuthenticateController@smslogin');
+    // 找回密码
+    $api->post('auth/resetpwd', 'App\Http\Controllers\Api\V1\AuthenticateController@resetPassword');
     // 获取用户手机验证码
     $api->post('auth/getsmscode', 'App\Http\Controllers\Api\V1\AuthenticateController@getSmsCode');
     // 生成图形验证码
@@ -34,7 +36,7 @@ $api->version('v1', ['middleware'=>['access','cross']], function ($api) {
     // 服务方列表
     $api->get('service/list', 'App\Http\Controllers\Api\V1\UserController@serList');
     // 服务方详情
-    $api->get('service/list/id', 'App\Http\Controllers\Api\V1\UserController@serInfo');
+    $api->get('service/list/{id}', 'App\Http\Controllers\Api\V1\UserController@serInfo');
 
     //【项目】
     // 项目列表
@@ -55,6 +57,8 @@ $api->version('v1', ['middleware'=>['access','cross']], function ($api) {
     $api->get('news/list/{id}', 'App\Http\Controllers\Api\V1\NewsController@newsInfo');
 
     
+    // 搜索
+    $api->post('search', 'App\Http\Controllers\Api\V1\ToolController@search');
     // $api->post('login','App\Http\Controllers\Auth\AuthController@postLogin');
 });
 
