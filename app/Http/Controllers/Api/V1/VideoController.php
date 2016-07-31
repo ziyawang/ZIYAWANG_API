@@ -63,10 +63,42 @@ class VideoController extends BaseController
         $startpage = isset($payload['startpage']) ?  $payload['startpage'] : 1;
         $pagecount = isset($payload['pagecount']) ?  $payload['pagecount'] : 5;
         $skipnum = ($startpage-1)*$pagecount;
-        $videotype = isset($payload['videotype']) ?  $payload['videotype'] : null;
+        $VideoLabel = isset($payload['VideoLabel']) ?  $payload['VideoLabel'] : null;
+        $order = isset($payload['order']) ?  $payload['order'] : null;
 
-        $pdata = Video::skip($skipnum)->take($pagecount)->get()->toArray();
-        dd($data);
+        if(!$VideoLabel && !$order){
+            $videos = Video::where('Flag', 1)->orderBy('updated_at','desc')->lists('VideoID');
+            $counts = count($videos);
+            $pages = ceil($counts/$pagecount);
+            $videos = Video::skip($skipnum)->take($pagecount)->where('Flag', 1)->orderBy('updated_at','desc')->lists('VideoID');
+        } elseif($VideoLabel && !$order) {
+            $videos = Video::where(['Flag'=>1,'VideoLabel'=>$VideoLabel])->orderBy('updated_at','desc')->lists('VideoID');
+            $counts = count($videos);
+            $pages = ceil($counts/$pagecount);
+            $videos = Video::skip($skipnum)->take($pagecount)->where(['Flag'=>1,'VideoLabel'=>$VideoLabel])->orderBy('updated_at','desc')->lists('VideoID');
+        } elseif(!$VideoLabel && $order) {
+            $videos = Video::where('Flag', 1)->orderBy('ViewCount','desc')->lists('VideoID');
+            $counts = count($videos);
+            $pages = ceil($counts/$pagecount);
+            $videos = Video::skip($skipnum)->take($pagecount)->where('Flag', 1)->orderBy('ViewCount','desc')->lists('VideoID');
+        }
+        
+        $data = [];
+        foreach ($videos as $id) {
+            $item = $this->getInfo($id);
+            $data[] = $item;
+        }
+        return $this->response->array(['counts'=>$counts, 'pages'=>$pages, 'data'=>$data, 'currentpage'=>$startpage]);
+    }
+
+    /**
+     * 获取视频详情
+     *
+     * @param Request $request
+     */
+    public function getInfo($id) {
+        $data = Video::select('VideoID','VideoTitle','VideoDes','VideoLogo','VideoLabel','VideoAuthor','PublishTime','ViewCount','CollectionCount','VideoLink','VideoLink2')->where('VideoID',$id)->first()->toArray();
+        return $data;
     }
 
     /**
@@ -75,7 +107,9 @@ class VideoController extends BaseController
      * @param Request $request
      */
     public function videoInfo($id) {
-        $data = Video::find($id);
-        dd($data);
+        
+        $data = $this->getInfo($id);
+        Video::where('VideoID',$id)->increment('ViewCount');
+        return $data;
     }
 }

@@ -86,9 +86,13 @@ $api->version('v1', ['protected' => true, 'middleware'=>['access','cross']], fun
     // 项目抢单列表
     $api->get('project/rushlist/{id}', 'App\Http\Controllers\Api\V1\UserController@proRushList');
     // 项目合作
-    $api->post('project/cooperate', 'App\Http\Controllers\Api\V1\ProjectController@proCooperate');
+    $api->post('project/cooperate', 'App\Http\Controllers\Api\V1\UserController@proCooperate');
     // 取消合作
-    $api->post('project/cancel', 'App\Http\Controllers\Api\V1\ProjectController@proCancel');
+    $api->post('project/cancel', 'App\Http\Controllers\Api\V1\UserController@proCancel');
+    // 合作列表
+    $api->get('project/coolist', 'App\Http\Controllers\Api\V1\UserController@cooList');   
+    // 我的抢单列表（服务方才有）
+    $api->get('project/myrush', 'App\Http\Controllers\Api\V1\UserController@rushList');
 
     //【视频】
     $api->post('video/create', 'App\Http\Controllers\Api\V1\VideoController@create');

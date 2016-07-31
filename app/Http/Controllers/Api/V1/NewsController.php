@@ -54,7 +54,7 @@ class NewsController extends BaseController
     }
 
     /**
-     * 视频列表
+     * 新闻列表
      *
      * @param Request $request
      */
@@ -63,10 +63,36 @@ class NewsController extends BaseController
         $startpage = isset($payload['startpage']) ?  $payload['startpage'] : 1;
         $pagecount = isset($payload['pagecount']) ?  $payload['pagecount'] : 5;
         $skipnum = ($startpage-1)*$pagecount;
-        $videotype = isset($payload['videotype']) ?  $payload['videotype'] : null;
+        $NewsLabel = isset($payload['NewsLabel']) ?  $payload['NewsLabel'] : null;
 
-        $data = Video::skip($skipnum)->take($pagecount)->get()->toArray();
-        dd($data);
+        if(!$NewsLabel){
+            $news = News::where('Flag', 1)->orderBy('updated_at','desc')->lists('NewsID');
+            $counts = count($news);
+            $pages = ceil($counts/$pagecount);
+            $news = News::skip($skipnum)->take($pagecount)->where('Flag', 1)->orderBy('updated_at','desc')->lists('NewsID');
+        } else {
+            $news = News::where(['Flag'=>1,'NewsLabel'=>$NewsLabel])->orderBy('updated_at','desc')->lists('NewsID');
+            $counts = count($news);
+            $pages = ceil($counts/$pagecount);
+            $news = News::skip($skipnum)->take($pagecount)->where(['Flag'=>1,'NewsLabel'=>$NewsLabel])->orderBy('updated_at','desc')->lists('NewsID');
+        }
+
+        $data = [];
+        foreach ($news as $id) {
+            $item = $this->getInfo($id);
+            $data[] = $item;
+        }
+        return $this->response->array(['counts'=>$counts, 'pages'=>$pages, 'data'=>$data, 'currentpage'=>$startpage]);
+    }
+
+    /**
+     * 获取新闻详情
+     *
+     * @param Request $request
+     */
+    public function getInfo($id) {
+        $data = News::select('NewsID','NewsTitle','NewsContent','NewsLogo','NewsLabel','PublishTime','NewsAuthor','ViewCount','CollectionCount','Brief')->where('NewsID',$id)->first()->toArray();
+        return $data;
     }
 
     /**
@@ -75,7 +101,9 @@ class NewsController extends BaseController
      * @param Request $request
      */
     public function newsInfo($id) {
-        $data = News::find($id);
-        dd($data);
+        
+        $data = $this->getInfo($id);
+        News::where('NewsID',$id)->increment('ViewCount');
+        return $data;
     }
 }

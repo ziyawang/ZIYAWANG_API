@@ -11,6 +11,7 @@ use App\Http\Controllers\Controller;
 use Dingo\Api\Routing\Helpers;
 use JWTAuth;
 use App\User;
+use App\Service;
 use Cache;
 use Tymon\users\Exceptions\JWTException;
 
@@ -61,7 +62,7 @@ class AuthenticateController extends Controller
         if ($res) {
             //给客服发送邮件
             $phonenumber = $payload['phonenumber'];
-            $email = 'zll@ziyawang.com';    
+            $email = '3153679024@qq.com';    
             $title = '新会员注册成功，请查看！';
             $message = '手机号为' . $phonenumber . '的用户注册成为资芽网会员';
 
@@ -70,7 +71,7 @@ class AuthenticateController extends Controller
             //生成token
             $user = User::where('phonenumber', $payload['phonenumber'])->first();
             $token = JWTAuth::fromUser($user);
-            return $this->response->array(['status_code' => '200', 'msg' => 'Create User Success', 'token' => $token]);
+            return $this->response->array(['status_code' => '200', 'msg' => 'Create User Success', 'token' => $token, 'role' => '0']);
         } else {
             return $this->response->array(['status_code' => '501', 'msg' => 'Create User Error']);
         }
@@ -112,11 +113,13 @@ class AuthenticateController extends Controller
         $user->password = bcrypt($payload['password']);
         $res = $user->save();
 
+        $role = Service::join('T_P_SERVICECERTIFY', 'T_P_SERVICECERTIFY.ServiceID', '=', 'T_U_SERVICEINFO.ServiceID')->where(['T_U_SERVICEINFO.UserID'=>$user->userid, 'T_P_SERVICECERTIFY.State'=>1])->count();
+
         // 发送结果
         if ($res) {
             // 通过用户实例，获取jwt-token
             $token = JWTAuth::fromUser($user);
-            return $this->response->array(['status_code' => '200', 'token' => $token]);
+            return $this->response->array(['status_code' => '200', 'token' => $token, 'role' => $role]);
         } else {
             return $this->response->array(['status_code' => '504', 'msg' => 'Password Change Error']);
         }
@@ -193,6 +196,12 @@ class AuthenticateController extends Controller
             return $this->response->array(['status_code' => '406', 'msg' => 'phonenumber does not exist']);
         }
 
+
+        //判断用户状态是否冻结，如果冻结，不能登录
+        if($user->Status == 1) {
+            return $this->response->array(['status_code' => '404', 'msg' => 'illegal operation']);
+        }
+
         // grab credentials from the request
         $credentials = $request->only('phonenumber', 'password');
 
@@ -208,9 +217,10 @@ class AuthenticateController extends Controller
             return $this->response->array(['status_code' => '502', 'msg' => 'could_not_create_token']);
         }
 
+        $role = Service::where('UserID', $user->userid)->count();
 
         // all good so return the token
-        return $this->response->array(['status_code' => '200', 'token' => $token]);
+        return $this->response->array(['status_code' => '200', 'token' => $token, 'role' => $role]);
     }
 
     /**
