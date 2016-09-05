@@ -65,22 +65,42 @@ class VideoController extends BaseController
         $skipnum = ($startpage-1)*$pagecount;
         $VideoLabel = isset($payload['VideoLabel']) ?  $payload['VideoLabel'] : null;
         $order = isset($payload['order']) ?  $payload['order'] : null;
+        $weight = isset($payload['weight']) ?  $payload['weight'] : null;
 
-        if(!$VideoLabel && !$order){
-            $videos = Video::where('Flag', 1)->orderBy('updated_at','desc')->lists('VideoID');
-            $counts = count($videos);
-            $pages = ceil($counts/$pagecount);
-            $videos = Video::skip($skipnum)->take($pagecount)->where('Flag', 1)->orderBy('updated_at','desc')->lists('VideoID');
-        } elseif($VideoLabel && !$order) {
-            $videos = Video::where(['Flag'=>1,'VideoLabel'=>$VideoLabel])->orderBy('updated_at','desc')->lists('VideoID');
-            $counts = count($videos);
-            $pages = ceil($counts/$pagecount);
-            $videos = Video::skip($skipnum)->take($pagecount)->where(['Flag'=>1,'VideoLabel'=>$VideoLabel])->orderBy('updated_at','desc')->lists('VideoID');
-        } elseif(!$VideoLabel && $order) {
-            $videos = Video::where('Flag', 1)->orderBy('ViewCount','desc')->lists('VideoID');
-            $counts = count($videos);
-            $pages = ceil($counts/$pagecount);
-            $videos = Video::skip($skipnum)->take($pagecount)->where('Flag', 1)->orderBy('ViewCount','desc')->lists('VideoID');
+        if($weight){
+            if($VideoLabel){
+                $videos = Video::where('Flag',1)->where('VideoLabel','like','%'.$VideoLabel.'%')->lists('VideoID');
+                $counts = count($videos);
+                $pages = ceil($counts/$pagecount);
+                $videos = Video::skip($skipnum)->take($pagecount)->where('Flag',1)->where('VideoLabel','like','%'.$VideoLabel.'%')->orderBy('Order','desc')->lists('VideoID');
+            } else {
+                $videos = Video::where('Flag', 1)->lists('VideoID');
+                $counts = count($videos);
+                $pages = ceil($counts/$pagecount);
+                $videos = Video::skip($skipnum)->take($pagecount)->where('Flag', 1)->orderBy('Order','desc')->lists('VideoID');
+            }
+        } else {
+            if(!$VideoLabel && !$order){
+                $videos = Video::where('Flag', 1)->lists('VideoID');
+                $counts = count($videos);
+                $pages = ceil($counts/$pagecount);
+                $videos = Video::skip($skipnum)->take($pagecount)->where('Flag', 1)->orderBy('created_at','desc')->lists('VideoID');
+            } elseif($VideoLabel && !$order) {
+                $videos = Video::where('Flag',1)->where('VideoLabel','like','%'.$VideoLabel.'%')->lists('VideoID');
+                $counts = count($videos);
+                $pages = ceil($counts/$pagecount);
+                $videos = Video::skip($skipnum)->take($pagecount)->where('Flag',1)->where('VideoLabel','like','%'.$VideoLabel.'%')->orderBy('created_at','desc')->lists('VideoID');
+            } elseif(!$VideoLabel && $order) {
+                $videos = Video::where('Flag', 1)->lists('VideoID');
+                $counts = count($videos);
+                $pages = ceil($counts/$pagecount);
+                $videos = Video::skip($skipnum)->take($pagecount)->where('Flag', 1)->orderBy('ViewCount','desc')->lists('VideoID');
+            } elseif($VideoLabel && $order) {
+                $videos = Video::where('Flag',1)->where('VideoLabel','like','%'.$VideoLabel.'%')->lists('VideoID');
+                $counts = count($videos);
+                $pages = ceil($counts/$pagecount);
+                $videos = Video::skip($skipnum)->take($pagecount)->where('Flag',1)->where('VideoLabel','like','%'.$VideoLabel.'%')->orderBy('ViewCount','desc')->lists('VideoID');
+            }          
         }
         
         $data = [];
@@ -97,7 +117,7 @@ class VideoController extends BaseController
      * @param Request $request
      */
     public function getInfo($id) {
-        $data = Video::select('VideoID','VideoTitle','VideoDes','VideoLogo','VideoLabel','VideoAuthor','PublishTime','ViewCount','CollectionCount','VideoLink','VideoLink2')->where('VideoID',$id)->first()->toArray();
+        $data = Video::select('VideoID','VideoTitle','VideoDes','VideoLogo','VideoThumb','VideoLabel','VideoAuthor','PublishTime','ViewCount','ZanCount','CollectionCount','VideoLink','VideoLink2')->where('VideoID',$id)->first()->toArray();
         return $data;
     }
 
@@ -110,6 +130,16 @@ class VideoController extends BaseController
         
         $data = $this->getInfo($id);
         Video::where('VideoID',$id)->increment('ViewCount');
+        $UserID = $this->auth->user() ? $this->auth->user()->toArray()['userid'] : null;
+        $data['CollectFlag'] = 0;
+        if ($UserID) {
+             $tmp = DB::table('T_P_COLLECTION')->where(['Type' => 2, 'ItemID' => $data['VideoID'], 'UserID' => $UserID])->get();
+             if ($tmp) {
+                $data['CollectFlag'] = 1;
+             } else {
+                $data['CollectFlag'] = 0;
+             }
+        }
         return $data;
     }
 }

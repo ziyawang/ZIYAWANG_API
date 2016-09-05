@@ -62,16 +62,21 @@ class AuthenticateController extends Controller
         if ($res) {
             //给客服发送邮件
             $phonenumber = $payload['phonenumber'];
-            $email = '3153679024@qq.com';    
-            $title = '新会员注册成功，请查看！';
-            $message = '手机号为' . $phonenumber . '的用户注册成为资芽网会员';
 
-            $this->_sendMail($email, $title, $message);
+            $fp = fsockopen("api.ziyawang.com", 80, $errno, $errstr, 30); 
+            if ($fp) {
+                $header  = "GET /v1/sendmail?access_token=token&phonenumber=$phonenumber HTTP/1.1\r\n";
+                $header .= "Host: api.ziyawang.com\r\n";
+                $header .= "Connection: Close\r\n\r\n";//长连接关闭
+
+                fwrite($fp, $header); 
+                fclose($fp); 
+            }
 
             //生成token
             $user = User::where('phonenumber', $payload['phonenumber'])->first();
             $token = JWTAuth::fromUser($user);
-            return $this->response->array(['status_code' => '200', 'msg' => 'Create User Success', 'token' => $token, 'role' => '0']);
+            return $this->response->array(['status_code' => '200', 'msg' => 'Create User Success', 'token' => $token, 'role' => '0', 'UserID' => $user->userid, 'UserPicture' => $user->UserPicture]);
         } else {
             return $this->response->array(['status_code' => '501', 'msg' => 'Create User Error']);
         }
@@ -113,13 +118,29 @@ class AuthenticateController extends Controller
         $user->password = bcrypt($payload['password']);
         $res = $user->save();
 
-        $role = Service::join('T_P_SERVICECERTIFY', 'T_P_SERVICECERTIFY.ServiceID', '=', 'T_U_SERVICEINFO.ServiceID')->where(['T_U_SERVICEINFO.UserID'=>$user->userid, 'T_P_SERVICECERTIFY.State'=>1])->count();
+        $hascertify = Service::join('T_P_SERVICECERTIFY', 'T_P_SERVICECERTIFY.ServiceID', '=', 'T_U_SERVICEINFO.ServiceID')->where(['T_U_SERVICEINFO.UserID'=>$user->userid, 'T_P_SERVICECERTIFY.State'=>1])->count();
 
+        $isservice = Service::where('UserID', $user->userid)->count();
+
+        if($isservice == 0 && $hascertify == 0){
+            $role = 0;
+        } elseif( $isservice == 1 && $hascertify == 0) {
+            $role = 2;
+        } elseif( $isservice == 1 && $hascertify == 1) {
+            $role = 1;
+            $ServiceName = Service::where('UserID', $user->userid)->pluck('ServiceName');
+        }
+
+        $role = (string)$role;
         // 发送结果
         if ($res) {
             // 通过用户实例，获取jwt-token
             $token = JWTAuth::fromUser($user);
-            return $this->response->array(['status_code' => '200', 'token' => $token, 'role' => $role]);
+            if($role == 1) {
+                return $this->response->array(['status_code' => '200', 'token' => $token, 'role' => $role, 'UserID' => $user->userid, 'UserPicture' => $user->UserPicture, 'ServiceName' => $ServiceName]);
+            } else {
+                return $this->response->array(['status_code' => '200', 'token' => $token, 'role' => $role, 'UserID' => $user->userid, 'UserPicture' => $user->UserPicture]);
+            }
         } else {
             return $this->response->array(['status_code' => '504', 'msg' => 'Password Change Error']);
         }
@@ -217,10 +238,27 @@ class AuthenticateController extends Controller
             return $this->response->array(['status_code' => '502', 'msg' => 'could_not_create_token']);
         }
 
-        $role = Service::where('UserID', $user->userid)->count();
+        $hascertify = Service::join('T_P_SERVICECERTIFY', 'T_P_SERVICECERTIFY.ServiceID', '=', 'T_U_SERVICEINFO.ServiceID')->where(['T_U_SERVICEINFO.UserID'=>$user->userid, 'T_P_SERVICECERTIFY.State'=>1])->count();
 
-        // all good so return the token
-        return $this->response->array(['status_code' => '200', 'token' => $token, 'role' => $role]);
+        $isservice = Service::where('UserID', $user->userid)->count();
+
+        if($isservice == 0 && $hascertify == 0){
+            $role = '0';
+        } elseif( $isservice == 1 && $hascertify == 0) {
+            $role = '2';
+        } elseif( $isservice == 1 && $hascertify == 1) {
+            $role = '1';
+            $ServiceName = Service::where('UserID', $user->userid)->pluck('ServiceName');
+        }
+
+        if($role == '1') {
+            return $this->response->array(['status_code' => '200', 'token' => $token, 'role' => $role, 'UserID' => $user->userid, 'UserPicture' => $user->UserPicture, 'ServiceName' => $ServiceName]);
+        } else {
+            // all good so return the token
+            return $this->response->array(['status_code' => '200', 'token' => $token, 'role' => $role, 'UserID' => $user->userid, 'UserPicture' => $user->UserPicture]);
+        }
+    
+
     }
 
     /**

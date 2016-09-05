@@ -64,17 +64,32 @@ class NewsController extends BaseController
         $pagecount = isset($payload['pagecount']) ?  $payload['pagecount'] : 5;
         $skipnum = ($startpage-1)*$pagecount;
         $NewsLabel = isset($payload['NewsLabel']) ?  $payload['NewsLabel'] : null;
+        $weight = isset($payload['weight']) ?  $payload['weight'] : null;
 
-        if(!$NewsLabel){
-            $news = News::where('Flag', 1)->orderBy('updated_at','desc')->lists('NewsID');
-            $counts = count($news);
-            $pages = ceil($counts/$pagecount);
-            $news = News::skip($skipnum)->take($pagecount)->where('Flag', 1)->orderBy('updated_at','desc')->lists('NewsID');
+        if($weight){
+            if($NewsLabel){
+                $news = News::where(['Flag'=>1,'NewsLabel'=>$NewsLabel])->lists('NewsID');
+                $counts = count($news);
+                $pages = ceil($counts/$pagecount);
+                $news = News::skip($skipnum)->take($pagecount)->where(['Flag'=>1,'NewsLabel'=>$NewsLabel])->orderBy('Order','desc')->lists('NewsID');
+            } else {
+                $news = News::where(['Flag'=>1])->lists('NewsID');
+                $counts = count($news);
+                $pages = ceil($counts/$pagecount);
+                $news = News::skip($skipnum)->take($pagecount)->where(['Flag'=>1])->orderBy('Order','desc')->lists('NewsID');
+            }
         } else {
-            $news = News::where(['Flag'=>1,'NewsLabel'=>$NewsLabel])->orderBy('updated_at','desc')->lists('NewsID');
-            $counts = count($news);
-            $pages = ceil($counts/$pagecount);
-            $news = News::skip($skipnum)->take($pagecount)->where(['Flag'=>1,'NewsLabel'=>$NewsLabel])->orderBy('updated_at','desc')->lists('NewsID');
+            if(!$NewsLabel){
+                $news = News::where('Flag', 1)->lists('NewsID');
+                $counts = count($news);
+                $pages = ceil($counts/$pagecount);
+                $news = News::skip($skipnum)->take($pagecount)->where('Flag', 1)->orderBy('created_at','desc')->lists('NewsID');
+            } else {
+                $news = News::where(['Flag'=>1,'NewsLabel'=>$NewsLabel])->lists('NewsID');
+                $counts = count($news);
+                $pages = ceil($counts/$pagecount);
+                $news = News::skip($skipnum)->take($pagecount)->where(['Flag'=>1,'NewsLabel'=>$NewsLabel])->orderBy('created_at','desc')->lists('NewsID');
+            }
         }
 
         $data = [];
@@ -91,7 +106,7 @@ class NewsController extends BaseController
      * @param Request $request
      */
     public function getInfo($id) {
-        $data = News::select('NewsID','NewsTitle','NewsContent','NewsLogo','NewsLabel','PublishTime','NewsAuthor','ViewCount','CollectionCount','Brief')->where('NewsID',$id)->first()->toArray();
+        $data = News::select('NewsID','NewsTitle','NewsContent','NewsLogo','NewsThumb','NewsLabel','PublishTime','NewsAuthor','ViewCount','CollectionCount','Brief')->where('NewsID',$id)->first()->toArray();
         return $data;
     }
 
@@ -104,6 +119,20 @@ class NewsController extends BaseController
         
         $data = $this->getInfo($id);
         News::where('NewsID',$id)->increment('ViewCount');
-        return $data;
+
+        $pre  = News::select('NewsID','NewsTitle')->where('NewsID','<',$id)->where('Flag', 1)->orderBy('NewsID','desc')->first();
+        $next = News::select('NewsID','NewsTitle')->where('NewsID','>',$id)->where('Flag', 1)->orderBy('NewsID','asc')->first();
+
+        $UserID = $this->auth->user() ? $this->auth->user()->toArray()['userid'] : null;
+        $data['CollectFlag'] = 0;
+        if ($UserID) {
+             $tmp = DB::table('T_P_COLLECTION')->where(['Type' => 3, 'ItemID' => $data['NewsID'], 'UserID' => $UserID])->get();
+             if ($tmp) {
+                $data['CollectFlag'] = 1;
+             } else {
+                $data['CollectFlag'] = 0;
+             }
+        }
+        return $this->response->array(['data'=>$data,'pre'=>$pre, 'next'=>$next]);
     }
 }
