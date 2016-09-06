@@ -536,11 +536,11 @@ class UserController extends BaseController
         $isser = Service::where('UserID',$UserID)->get();
         if($isser){
             $ServiceID = Service::where('UserID',$UserID)->pluck('ServiceID');
-            $projects = Project::where("ServiceID", $ServiceID)->orWhere( 'UserID', $UserID)->whereIn('PublishState', [1,2])->lists('ProjectID');
+            $projects = Project::where(["ServiceID"=>$ServiceID, 'PublishState'=>1])->orWhere(["ServiceID"=>$ServiceID, 'PublishState'=>2])->orWhere(['UserID'=>$UserID, 'PublishState'=>1])->orWhere(['UserID'=>$UserID, 'PublishState'=>2])->lists('ProjectID');
             $counts = count($projects);
             $pages = ceil($counts/$pagecount);
 
-            $projects = Project::where("ServiceID", $ServiceID)->orWhere( 'UserID', $UserID)->whereIn('PublishState', [1,2])->orderBy('PublishTime','desc')->skip($skipnum)->take($pagecount)->lists('ProjectID');
+            $projects = Project::where(["ServiceID"=>$ServiceID, 'PublishState'=>1])->orWhere(["ServiceID"=>$ServiceID, 'PublishState'=>2])->orWhere(['UserID'=>$UserID, 'PublishState'=>1])->orWhere(['UserID'=>$UserID, 'PublishState'=>2])->orderBy('PublishTime','desc')->skip($skipnum)->take($pagecount)->lists('ProjectID');
         } else {
             $projects = Project::where("UserID", $UserID)->whereIn('PublishState', [1,2])->lists('ProjectID');
             $counts = count($projects);
