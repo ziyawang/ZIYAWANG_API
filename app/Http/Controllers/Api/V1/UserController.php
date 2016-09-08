@@ -399,6 +399,8 @@ class UserController extends BaseController
             $item['Buyer'] = isset($item['Buyer']) ? $item['Buyer'] : '';
             $item['ProjectNumber'] = 'FB' . sprintf("%05d", $item['ProjectID']);
             $item['PublishTime'] = substr($item['PublishTime'], 0,10);
+            $item['InvestType'] = isset($item['InvestType']) ? $item['InvestType'] : '';
+            $item['Year'] = isset($item['Year']) ? $item['Year'] : '';
             $data[] = $item;
         }
         return $this->response->array(['counts'=>$counts, 'pages'=>$pages, 'data'=>$data, 'currentpage'=>$startpage]);
@@ -568,6 +570,8 @@ class UserController extends BaseController
             $item['Buyer'] = isset($item['Buyer']) ? $item['Buyer'] : '';
             $item['ProjectNumber'] = 'FB' . sprintf("%05d", $item['ProjectID']);
             $item['PublishTime'] = substr($item['PublishTime'], 0,10);
+            $item['InvestType'] = isset($item['InvestType']) ? $item['InvestType'] : '';
+            $item['Year'] = isset($item['Year']) ? $item['Year'] : '';
             $data[] = $item;
         }
         return $this->response->array(['counts'=>$counts, 'pages'=>$pages, 'data'=>$data, 'currentpage'=>$startpage]);
@@ -611,6 +615,8 @@ class UserController extends BaseController
             $item['Buyer'] = isset($item['Buyer']) ? $item['Buyer'] : '';
             $item['ProjectNumber'] = 'FB' . sprintf("%05d", $item['ProjectID']);
             $item['PublishTime'] = substr($item['PublishTime'], 0,10);
+            $item['InvestType'] = isset($item['InvestType']) ? $item['InvestType'] : '';
+            $item['Year'] = isset($item['Year']) ? $item['Year'] : '';
             $data[] = $item;
         }
         return $this->response->array(['counts'=>$counts, 'pages'=>$pages, 'data'=>$data, 'currentpage'=>$startpage]);

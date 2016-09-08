@@ -157,6 +157,8 @@ class ProjectController extends BaseController
             $item['Informant'] = isset($item['Informant']) ? $item['Informant'] : '';
             $item['Buyer'] = isset($item['Buyer']) ? $item['Buyer'] : '';
             $item['ProjectNumber'] = 'FB' . sprintf("%05d", $item['ProjectID']);
+            $item['InvestType'] = isset($item['InvestType']) ? $item['InvestType'] : '';
+            $item['Year'] = isset($item['Year']) ? $item['Year'] : '';
             $endTime = time();
             $time = strtotime($item['PublishTime']) + 24*60*60;
                 $item['NewFlag'] = 0;
@@ -284,6 +286,13 @@ class ProjectController extends BaseController
                 ->join("users", 'T_P_PROJECTINFO.UserID', '=', 'users.UserID')
                 ->select("T_P_PROJECTINFO.ProjectID",'T_P_PROJECTINFO.TypeID','T_P_PROJECTINFO.UserID','PublishState','Member','CertifyState','PublishTime','PhoneNumber','ServiceID','TypeName','ViewCount','CollectionCount','ProArea','WordDes','VoiceDes','PictureDes1','PictureDes2','PictureDes3','AssetType','TotalMoney','TransferMoney')->where($where)->get()->toArray();
                 break;
+
+            case '15':
+                $project = Project::join('T_P_PROJECTTYPE', 'T_P_PROJECTINFO.TypeID', '=', 'T_P_PROJECTTYPE.TypeID')
+                ->join("$diffTableName", 'T_P_PROJECTINFO.ProjectID', '=', "$diffTableName.ProjectID")
+                ->join("users", 'T_P_PROJECTINFO.UserID', '=', 'users.UserID')
+                ->select("T_P_PROJECTINFO.ProjectID",'T_P_PROJECTINFO.TypeID','T_P_PROJECTINFO.UserID','PublishState','Member','CertifyState','PublishTime','PhoneNumber','ServiceID','TypeName','ViewCount','CollectionCount','ProArea','WordDes','VoiceDes','PictureDes1','PictureDes2','PictureDes3','AssetType','InvestType','Rate','Year')->where($where)->get()->toArray();
+                break;
         }
         $project = $project[0];
         //抢单人数统计
@@ -348,6 +357,8 @@ class ProjectController extends BaseController
         $data['Buyer'] = isset($data['Buyer']) ? $data['Buyer'] : '';
         $data['ProjectNumber'] = 'FB' . sprintf("%05d", $data['ProjectID']);
         $data['PublishTime'] = substr($data['PublishTime'], 0,10);
+        $data['InvestType'] = isset($data['InvestType']) ? $data['InvestType'] : '';
+        $data['Year'] = isset($data['Year']) ? $data['Year'] : '';
         Project::where('ProjectID',$id)->increment('ViewCount');
         
         $UserID = $this->auth->user() ? $this->auth->user()->toArray()['userid'] : null;
