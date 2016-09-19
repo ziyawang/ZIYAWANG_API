@@ -60,6 +60,7 @@ $api->get('ie/auth/login', 'App\Http\Controllers\Api\V1\AuthenticateController@a
     // 视频详情
     $api->get('video/list/{id}', 'App\Http\Controllers\Api\V1\VideoController@videoInfo');
 
+
     //【新闻资讯】
     // 新闻资讯列表
     $api->get('news/list', 'App\Http\Controllers\Api\V1\NewsController@newsList');
@@ -77,6 +78,8 @@ $api->get('ie/auth/login', 'App\Http\Controllers\Api\V1\AuthenticateController@a
     $api->get('app/iosupdate', 'App\Http\Controllers\Api\V1\ToolController@iosupdate');
     //appBanner
     $api->get('app/banner', 'App\Http\Controllers\Api\V1\ToolController@banner');
+    //app 版本1.0.1中轮播图接口
+     $api->get('app/twobanner', 'App\Http\Controllers\Api\V1\LdsController@banner');
 
     //视频评论
     $api->post('video/comment/create', 'App\Http\Controllers\Api\V1\ToolController@commentCreate');
@@ -102,6 +105,8 @@ $api->get('ie/auth/login', 'App\Http\Controllers\Api\V1\AuthenticateController@a
     $api->get('match/proser','App\Http\Controllers\Api\V1\ZLLController@matchProSer');//发布信息匹配服务方
     $api->get('sendmail','App\Http\Controllers\Api\V1\ZLLController@sendmail');//注册用户发送邮件
     $api->get('test','App\Http\Controllers\Api\V1\ZLLController@test');//测试异步发送邮件
+    $api->get('sendmessage','App\Http\Controllers\Api\V1\LdsController@sendMessage');//发送信息，提醒用户下载app
+    $api->get('match/video/{id}', 'App\Http\Controllers\Api\V1\LdsController@reVideo');
 
 });
 

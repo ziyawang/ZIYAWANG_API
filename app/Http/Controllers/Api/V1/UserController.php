@@ -140,6 +140,7 @@ class UserController extends BaseController
     {   
         $service = $this->getInfo($id);
         $service['ServiceNumber'] = 'FW' . sprintf("%05d", $service['ServiceID']);
+        $service['created_at'] = substr($service['created_at'], 0,10);
         Service::where('ServiceID',$id)->increment('ViewCount');
         $UserID = $this->auth->user() ? $this->auth->user()->toArray()['userid'] : null;
         $service['CollectFlag'] = 0;
