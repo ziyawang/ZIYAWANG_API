@@ -67,7 +67,7 @@ class LdsController extends  BaseController{
 						$sendResult=$this->_sendMes($phoneNumber);
 						if($sendResult){
 							Send::where("receiveNum",$phoneNumber)->update([
-								 'created_at' =>date("Y-m-d H:i:s", time()),
+								// 'created_at' =>date("Y-m-d H:i:s", time()),
 								  'updated_at'=>date("Y-m-d H:i:s", time())
 								]);
 						}

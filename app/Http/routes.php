@@ -17,6 +17,10 @@ Route::get('/', function () {
 
 
 
+//支付成功回调地址
+Route::any('pay/result','Api\V1\ZLLController@payResult');
+//webhooks回调地址
+Route::any('pay/webhooks','Api\V1\ZLLController@webhooks');
 
 // API 路由接管
 $api = app('api.router');
@@ -108,6 +112,13 @@ $api->get('ie/auth/login', 'App\Http\Controllers\Api\V1\AuthenticateController@a
     $api->get('sendmessage','App\Http\Controllers\Api\V1\LdsController@sendMessage');//发送信息，提醒用户下载app
     $api->get('match/video/{id}', 'App\Http\Controllers\Api\V1\LdsController@reVideo');
 
+    
+    //亮亮9.24
+    //充值列表
+    $api->get('pay/list','App\Http\Controllers\Api\V1\ZLLController@payList');
+    //区分app不同步
+    $api->get('project/lists', 'App\Http\Controllers\Api\V1\ProjectController@proList2');
+
 });
 
 // 私有接口，需要登录
@@ -189,6 +200,22 @@ $api->version('v1', ['protected' => true, 'middleware'=>['access','cross']], fun
     //获取融云token
     $api->get('rctoken', 'App\Http\Controllers\Api\V1\IMController@get_token');
 
+
+    //亮亮9.21
+    //查看联系方式消费接口
+    $api->post('consume','App\Http\Controllers\Api\V1\ZLLController@consume');
+    //app查看联系方式消费接口
+    $api->post('app/consume','App\Http\Controllers\Api\V1\ZLLController@appConsume');
+    //账单
+    $api->post('/mybill','App\Http\Controllers\Api\V1\ZLLController@mybill');
+    //亮亮9.20
+    //ping++支付接口
+    $api->post('pay','App\Http\Controllers\Api\V1\ZLLController@payMoney');
+    //修改用户名
+    $api->post('auth/chusername','App\Http\Controllers\Api\V1\ZLLController@changeUserName');
+    //亮亮9.27
+    //苹果支付成功回调接口
+    $api->post('apple/pay','App\Http\Controllers\Api\V1\ZLLController@applePay');
 
 });
 

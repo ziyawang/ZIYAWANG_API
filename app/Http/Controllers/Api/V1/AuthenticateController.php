@@ -238,6 +238,18 @@ class AuthenticateController extends Controller
             return $this->response->array(['status_code' => '502', 'msg' => 'could_not_create_token']);
         }
 
+        //写登录log
+        $log_path = base_path().'/storage/logs/data/';
+        $log_file_name = date('Ymd', time()) . '.log';
+        $Logs = new \App\Logs($log_path,$log_file_name);
+        $log = array();
+        $log['phonenumber'] = $payload['phonenumber'];
+        $log['time'] = time();
+        $log['ip'] = $_SERVER["REMOTE_ADDR"];
+        $logstr = serialize($log);
+        $res = $Logs->setLog($logstr); 
+
+
         $hascertify = Service::join('T_P_SERVICECERTIFY', 'T_P_SERVICECERTIFY.ServiceID', '=', 'T_U_SERVICEINFO.ServiceID')->where(['T_U_SERVICEINFO.UserID'=>$user->userid, 'T_P_SERVICECERTIFY.State'=>1])->count();
 
         $isservice = Service::where('UserID', $user->userid)->count();

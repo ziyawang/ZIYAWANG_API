@@ -4,8 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "b48ba3ebbf09ed7c48c85e317296271b",
-    "content-hash": "c4bf1361511eb40e9c872059bf3741de",
+    "hash": "9e0c25d61b1d210dd392c4f8a3bf874a",
+    "content-hash": "284ed2b17741e62fc269206c79c6df59",
     "packages": [
         {
             "name": "classpreloader/classpreloader",
@@ -1866,16 +1866,16 @@
         },
         {
             "name": "pingplusplus/pingpp-php",
-            "version": "dev-master",
+            "version": "2.1.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/PingPlusPlus/pingpp-php.git",
-                "reference": "ce8864836f29de3737a4e2e81d336f88dae1d291"
+                "reference": "c1412aac5353ad81ed1e75a34c8e9cb36364503a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://packagist.phpcomposer.com/files/PingPlusPlus/pingpp-php/ce8864836f29de3737a4e2e81d336f88dae1d291.zip",
-                "reference": "ce8864836f29de3737a4e2e81d336f88dae1d291",
+                "url": "https://packagist.phpcomposer.com/files/PingPlusPlus/pingpp-php/c1412aac5353ad81ed1e75a34c8e9cb36364503a.zip",
+                "reference": "c1412aac5353ad81ed1e75a34c8e9cb36364503a",
                 "shasum": ""
             },
             "require": {
@@ -1910,7 +1910,7 @@
                 "mobile payment processing",
                 "pingpp"
             ],
-            "time": "2016-06-21 06:58:43"
+            "time": "2016-08-18 10:18:18"
         },
         {
             "name": "psr/http-message",
@@ -4491,7 +4491,6 @@
     "minimum-stability": "stable",
     "stability-flags": {
         "dingo/api": 20,
-        "pingplusplus/pingpp-php": 20,
         "vergil-lai/uc-client": 20
     },
     "prefer-stable": false,

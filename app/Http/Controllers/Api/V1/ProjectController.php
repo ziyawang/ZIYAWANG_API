@@ -175,6 +175,92 @@ class ProjectController extends BaseController
     }
 
     /**
+     * 项目列表
+     *
+     * @param Request $request
+     */
+    public function proList2() {
+        $payload = app('request')->all();
+        $startpage = isset($payload['startpage']) ?  $payload['startpage'] : 1;
+        $pagecount = isset($payload['pagecount']) ?  $payload['pagecount'] : 5;
+        $skipnum = ($startpage-1)*$pagecount;
+        $TypeID = (isset($payload['TypeID']) && $payload['TypeID'] != 'null' &&  $payload['TypeID'] != '' ) ?  $payload['TypeID'] : null;
+        $ProArea = (isset($payload['ProArea']) && $payload['ProArea'] != 'null' && $payload['ProArea'] != '' ) ?  $payload['ProArea'] : null;
+        $Vip = (isset($payload['Vip']) && $payload['Vip'] != 'null' && $payload['Vip'] != '' ) ?  $payload['Vip'] : 'default';
+        if($Vip == 'default' || $Vip == 'null' || $Vip == '') {
+            $Vip = [0,1,2];
+        } else {
+            $Vip = array($Vip);
+        }
+
+        $where = app('request')->except('startpage','pagecount','access_token','TypeID', 'ProArea', '_', 'Vip','token');
+
+        if(!$TypeID && !$ProArea) {
+            $projects = Project::skip($skipnum)->take($pagecount)->where('CertifyState',1)->where('PublishState','<>','2')->whereIn('Member',$Vip)->join('T_P_PROJECTTYPE', 'T_P_PROJECTINFO.TypeID', '=', 'T_P_PROJECTTYPE.TypeID')->orderBy('T_P_PROJECTINFO.created_at','desc')->lists('ProjectID');
+            $counts = Project::join('T_P_PROJECTTYPE', 'T_P_PROJECTINFO.TypeID', '=', 'T_P_PROJECTTYPE.TypeID')->where('CertifyState',1)->where('PublishState','<>','2')->whereIn('Member',$Vip)->count();
+            $pages = ceil($counts/$pagecount);
+        } elseif ($TypeID && !$ProArea) {
+            if(count($where) == 0){
+                $projects = Project::where('TypeID',$TypeID)->where('CertifyState',1)->where('PublishState','<>','2')->whereIn('Member',$Vip)->lists('ProjectID');
+                $counts = count($projects);
+                $projects = Project::whereIn('ProjectID',$projects)->where('PublishState','<>','2')->whereIn('Member',$Vip)->skip($skipnum)->take($pagecount)->join('T_P_PROJECTTYPE', 'T_P_PROJECTINFO.TypeID', '=', 'T_P_PROJECTTYPE.TypeID')->orderBy('T_P_PROJECTINFO.created_at','desc')->lists('ProjectID');
+                $pages = ceil($counts/$pagecount);
+            } else {
+                $projects = Project::where('TypeID',$TypeID)->where('PublishState','<>','2')->whereIn('Member',$Vip)->where('CertifyState',1)->lists('ProjectID');
+                $diffTableName = DB::table('T_P_PROJECTTYPE')->where('TypeID',$TypeID)->pluck('TableName');
+                $projects = DB::table("$diffTableName")->whereIn('ProjectID',$projects)->where($where)->lists('ProjectID');
+                $counts = count($projects);
+                $projects = Project::whereIn('ProjectID',$projects)->where('PublishState','<>','2')->whereIn('Member',$Vip)->skip($skipnum)->take($pagecount)->join('T_P_PROJECTTYPE', 'T_P_PROJECTINFO.TypeID', '=', 'T_P_PROJECTTYPE.TypeID')->orderBy('T_P_PROJECTINFO.created_at','desc')->lists('ProjectID');
+                $pages = ceil($counts/$pagecount);
+            }
+        } elseif (!$TypeID && $ProArea) {
+            $projects = Project::where('ProArea','like','%'.$ProArea.'%')->where('PublishState','<>','2')->whereIn('Member',$Vip)->where('CertifyState',1)->lists('ProjectID');
+            $counts = count($projects);
+            $projects = Project::whereIn('ProjectID',$projects)->where('PublishState','<>','2')->whereIn('Member',$Vip)->skip($skipnum)->take($pagecount)->join('T_P_PROJECTTYPE', 'T_P_PROJECTINFO.TypeID', '=', 'T_P_PROJECTTYPE.TypeID')->orderBy('T_P_PROJECTINFO.created_at','desc')->lists('ProjectID');
+            $pages = ceil($counts/$pagecount);
+        } elseif ($TypeID && $ProArea) {
+            $projects = Project::where('TypeID',$TypeID)->where('ProArea','like','%'.$ProArea.'%')->where('PublishState','<>','2')->whereIn('Member',$Vip)->where('CertifyState',1)->orderBy('T_P_PROJECTINFO.created_at','desc')->lists('ProjectID');
+            $diffTableName = DB::table('T_P_PROJECTTYPE')->where('TypeID',$TypeID)->pluck('TableName');
+            $projects = DB::table("$diffTableName")->whereIn('ProjectID',$projects)->where($where)->lists('ProjectID');
+            $counts = count($projects);
+            $projects = Project::whereIn('ProjectID',$projects)->skip($skipnum)->take($pagecount)->where('PublishState','<>','2')->whereIn('Member',$Vip)->join('T_P_PROJECTTYPE', 'T_P_PROJECTINFO.TypeID', '=', 'T_P_PROJECTTYPE.TypeID')->orderBy('T_P_PROJECTINFO.created_at','desc')->lists('ProjectID');
+            $pages = ceil($counts/$pagecount);
+        }
+
+        $data = [];
+        foreach ($projects as $id) {
+            $item = $this->getInfo($id);
+            $item['ProArea'] = isset($item['ProArea']) ? $item['ProArea'] : '';
+            $item['FromWhere'] = isset($item['FromWhere']) ? $item['FromWhere'] : '';
+            $item['AssetType'] = isset($item['AssetType']) ? $item['AssetType'] : '';
+            $item['TotalMoney'] = isset($item['TotalMoney']) ? $item['TotalMoney'] : '';
+            $item['TransferMoney'] = isset($item['TransferMoney']) ? $item['TransferMoney'] : '';
+            $item['Status'] = isset($item['Status']) ? $item['Status'] : '';
+            $item['Corpore'] = isset($item['Corpore']) ? $item['Corpore'] : '';
+            $item['Rate'] = isset($item['Rate']) ? $item['Rate'] : '';
+            $item['Requirement'] = isset($item['Requirement']) ? $item['Requirement'] : '';
+            $item['BuyerNature'] = isset($item['BuyerNature']) ? $item['BuyerNature'] : '';
+            $item['Informant'] = isset($item['Informant']) ? $item['Informant'] : '';
+            $item['Buyer'] = isset($item['Buyer']) ? $item['Buyer'] : '';
+            $item['ProjectNumber'] = 'FB' . sprintf("%05d", $item['ProjectID']);
+            $item['InvestType'] = isset($item['InvestType']) ? $item['InvestType'] : '';
+            $item['Year'] = isset($item['Year']) ? $item['Year'] : '';
+            $endTime = time();
+            $time = strtotime($item['PublishTime']) + 24*60*60;
+                $item['NewFlag'] = 0;
+            if($time > $endTime){
+                $item['NewFlag'] = 1;
+            }
+            $item['PublishTime'] = substr($item['PublishTime'], 0,10);
+            $data[] = $item;
+        }
+         // dd($data);
+        return $this->response->array(['counts'=>$counts, 'pages'=>$pages, 'data'=>$data, 'currentpage'=>$startpage]);
+        // return json_encode([['test'=>1],['test'=>2]]);
+        // return $this->response->array([['test'=>1],['test'=>2]]);
+    }
+
+    /**
      * 获取项目详情
      *
      * @param Request $request
@@ -191,35 +277,35 @@ class ProjectController extends BaseController
                 $project = Project::join('T_P_PROJECTTYPE', 'T_P_PROJECTINFO.TypeID', '=', 'T_P_PROJECTTYPE.TypeID')
                 ->join("$diffTableName", 'T_P_PROJECTINFO.ProjectID', '=', "$diffTableName.ProjectID")
                 ->join("users", 'T_P_PROJECTINFO.UserID', '=', 'users.UserID')
-                ->select("T_P_PROJECTINFO.ProjectID",'T_P_PROJECTINFO.TypeID','T_P_PROJECTINFO.UserID','PublishState','Member','CertifyState','PublishTime','PhoneNumber','ServiceID','TypeName','ViewCount','CollectionCount','ProArea','WordDes','VoiceDes','PictureDes1','PictureDes2','PictureDes3','TotalMoney','FromWhere','AssetType','AssetList','TransferMoney')->where($where)->get()->toArray();
+                ->select("T_P_PROJECTINFO.ProjectID",'T_P_PROJECTINFO.TypeID','T_P_PROJECTINFO.UserID','PublishState','Publisher','Price','Member','CertifyState','PublishTime','PhoneNumber','ServiceID','TypeName','ViewCount','CollectionCount','ProArea','WordDes','VoiceDes','CompanyDes','PictureDes1','PictureDes2','PictureDes3','TotalMoney','FromWhere','AssetType','AssetList','TransferMoney')->where($where)->get()->toArray();
                 break;
 
             case '2':
                 $project = Project::join('T_P_PROJECTTYPE', 'T_P_PROJECTINFO.TypeID', '=', 'T_P_PROJECTTYPE.TypeID')
                 ->join("$diffTableName", 'T_P_PROJECTINFO.ProjectID', '=', "$diffTableName.ProjectID")
                 ->join("users", 'T_P_PROJECTINFO.UserID', '=', 'users.UserID')
-                ->select("T_P_PROJECTINFO.ProjectID",'T_P_PROJECTINFO.TypeID','T_P_PROJECTINFO.UserID','PublishState','Member','CertifyState','PublishTime','PhoneNumber','ServiceID','TypeName','ViewCount','CollectionCount','ProArea','WordDes','VoiceDes','PictureDes1','PictureDes2','PictureDes3','TotalMoney',$diffTableName.'.Status','AssetType','Rate')->where($where)->get()->toArray();
+                ->select("T_P_PROJECTINFO.ProjectID",'T_P_PROJECTINFO.TypeID','T_P_PROJECTINFO.UserID','PublishState','Publisher','Price','Member','CertifyState','PublishTime','PhoneNumber','ServiceID','TypeName','ViewCount','CollectionCount','ProArea','WordDes','VoiceDes','CompanyDes','PictureDes1','PictureDes2','PictureDes3','TotalMoney',$diffTableName.'.Status','AssetType','Rate')->where($where)->get()->toArray();
                 break;
 
             case '3':
                 $project = Project::join('T_P_PROJECTTYPE', 'T_P_PROJECTINFO.TypeID', '=', 'T_P_PROJECTTYPE.TypeID')
                 ->join("$diffTableName", 'T_P_PROJECTINFO.ProjectID', '=', "$diffTableName.ProjectID")
                 ->join("users", 'T_P_PROJECTINFO.UserID', '=', 'users.UserID')
-                ->select("T_P_PROJECTINFO.ProjectID",'T_P_PROJECTINFO.TypeID','T_P_PROJECTINFO.UserID','PublishState','Member','CertifyState','PublishTime','PhoneNumber','ServiceID','TypeName','ViewCount','CollectionCount','ProArea','WordDes','VoiceDes','PictureDes1','PictureDes2','PictureDes3','AssetType','Requirement')->where($where)->get()->toArray();
+                ->select("T_P_PROJECTINFO.ProjectID",'T_P_PROJECTINFO.TypeID','T_P_PROJECTINFO.UserID','PublishState','Publisher','Price','Member','CertifyState','PublishTime','PhoneNumber','ServiceID','TypeName','ViewCount','CollectionCount','ProArea','WordDes','VoiceDes','CompanyDes','PictureDes1','PictureDes2','PictureDes3','AssetType','Requirement')->where($where)->get()->toArray();
                 break;
 
             case '4':
                 $project = Project::join('T_P_PROJECTTYPE', 'T_P_PROJECTINFO.TypeID', '=', 'T_P_PROJECTTYPE.TypeID')
                 ->join("$diffTableName", 'T_P_PROJECTINFO.ProjectID', '=', "$diffTableName.ProjectID")
                 ->join("users", 'T_P_PROJECTINFO.UserID', '=', 'users.UserID')
-                ->select("T_P_PROJECTINFO.ProjectID",'T_P_PROJECTINFO.TypeID','T_P_PROJECTINFO.UserID','PublishState','Member','CertifyState','PublishTime','PhoneNumber','ServiceID','TypeName','ViewCount','CollectionCount','ProArea','WordDes','VoiceDes','PictureDes1','PictureDes2','PictureDes3','TotalMoney','BuyerNature')->where($where)->get()->toArray();
+                ->select("T_P_PROJECTINFO.ProjectID",'T_P_PROJECTINFO.TypeID','T_P_PROJECTINFO.UserID','PublishState','Publisher','Price','Member','CertifyState','PublishTime','PhoneNumber','ServiceID','TypeName','ViewCount','CollectionCount','ProArea','WordDes','VoiceDes','CompanyDes','PictureDes1','PictureDes2','PictureDes3','TotalMoney','BuyerNature')->where($where)->get()->toArray();
                 break;
 
             case '5':
                 $project = Project::join('T_P_PROJECTTYPE', 'T_P_PROJECTINFO.TypeID', '=', 'T_P_PROJECTTYPE.TypeID')
                 ->join("$diffTableName", 'T_P_PROJECTINFO.ProjectID', '=', "$diffTableName.ProjectID")
                 ->join("users", 'T_P_PROJECTINFO.UserID', '=', 'users.UserID')
-                ->select("T_P_PROJECTINFO.ProjectID",'T_P_PROJECTINFO.TypeID','T_P_PROJECTINFO.UserID','PublishState','Member','CertifyState','PublishTime','PhoneNumber','ServiceID','TypeName','ViewCount','CollectionCount','ProArea','WordDes','VoiceDes','PictureDes1','PictureDes2','PictureDes3','TotalMoney','AssetType')->where($where)->get()->toArray();
+                ->select("T_P_PROJECTINFO.ProjectID",'T_P_PROJECTINFO.TypeID','T_P_PROJECTINFO.UserID','PublishState','Publisher','Price','Member','CertifyState','PublishTime','PhoneNumber','ServiceID','TypeName','ViewCount','CollectionCount','ProArea','WordDes','VoiceDes','CompanyDes','PictureDes1','PictureDes2','PictureDes3','TotalMoney','AssetType')->where($where)->get()->toArray();
                 // dd($project);
                 // $project['0']['TypeName'] = $project['0']['AssetType'].'信息';
                 break;
@@ -228,70 +314,70 @@ class ProjectController extends BaseController
                 $project = Project::join('T_P_PROJECTTYPE', 'T_P_PROJECTINFO.TypeID', '=', 'T_P_PROJECTTYPE.TypeID')
                 ->join("$diffTableName", 'T_P_PROJECTINFO.ProjectID', '=', "$diffTableName.ProjectID")
                 ->join("users", 'T_P_PROJECTINFO.UserID', '=', 'users.UserID')
-                ->select("T_P_PROJECTINFO.ProjectID",'T_P_PROJECTINFO.TypeID','T_P_PROJECTINFO.UserID','PublishState','Member','CertifyState','PublishTime','PhoneNumber','ServiceID','TypeName','ViewCount','CollectionCount','ProArea','WordDes','VoiceDes','PictureDes1','PictureDes2','PictureDes3','TotalMoney','Rate','AssetType')->where($where)->get()->toArray();
+                ->select("T_P_PROJECTINFO.ProjectID",'T_P_PROJECTINFO.TypeID','T_P_PROJECTINFO.UserID','PublishState','Publisher','Price','Member','CertifyState','PublishTime','PhoneNumber','ServiceID','TypeName','ViewCount','CollectionCount','ProArea','WordDes','VoiceDes','CompanyDes','PictureDes1','PictureDes2','PictureDes3','TotalMoney','Rate','AssetType')->where($where)->get()->toArray();
                 break;
 
             case '7':
                 $project = Project::join('T_P_PROJECTTYPE', 'T_P_PROJECTINFO.TypeID', '=', 'T_P_PROJECTTYPE.TypeID')
                 ->join("$diffTableName", 'T_P_PROJECTINFO.ProjectID', '=', "$diffTableName.ProjectID")
                 ->join("users", 'T_P_PROJECTINFO.UserID', '=', 'users.UserID')
-                ->select("T_P_PROJECTINFO.ProjectID",'T_P_PROJECTINFO.TypeID','T_P_PROJECTINFO.UserID','PublishState','Member','CertifyState','PublishTime','PhoneNumber','ServiceID','TypeName','ViewCount','CollectionCount','ProArea','WordDes','VoiceDes','PictureDes1','PictureDes2','PictureDes3','TotalMoney','ServiceLife')->where($where)->get()->toArray();
+                ->select("T_P_PROJECTINFO.ProjectID",'T_P_PROJECTINFO.TypeID','T_P_PROJECTINFO.UserID','PublishState','Publisher','Price','Member','CertifyState','PublishTime','PhoneNumber','ServiceID','TypeName','ViewCount','CollectionCount','ProArea','WordDes','VoiceDes','CompanyDes','PictureDes1','PictureDes2','PictureDes3','TotalMoney','ServiceLife')->where($where)->get()->toArray();
                 break;
 
             case '8':
                 $project = Project::join('T_P_PROJECTTYPE', 'T_P_PROJECTINFO.TypeID', '=', 'T_P_PROJECTTYPE.TypeID')
                 ->join("$diffTableName", 'T_P_PROJECTINFO.ProjectID', '=', "$diffTableName.ProjectID")
                 ->join("users", 'T_P_PROJECTINFO.UserID', '=', 'users.UserID')
-                ->select("T_P_PROJECTINFO.ProjectID",'T_P_PROJECTINFO.TypeID','T_P_PROJECTINFO.UserID','PublishState','Member','CertifyState','PublishTime','PhoneNumber','ServiceID','TypeName','ViewCount','CollectionCount','ProArea','WordDes','VoiceDes','PictureDes1','PictureDes2','PictureDes3','Date','AssetType')->where($where)->get()->toArray();
+                ->select("T_P_PROJECTINFO.ProjectID",'T_P_PROJECTINFO.TypeID','T_P_PROJECTINFO.UserID','PublishState','Publisher','Price','Member','CertifyState','PublishTime','PhoneNumber','ServiceID','TypeName','ViewCount','CollectionCount','ProArea','WordDes','VoiceDes','CompanyDes','PictureDes1','PictureDes2','PictureDes3','Date','AssetType')->where($where)->get()->toArray();
                 break;
 
             case '9':
                 $project = Project::join('T_P_PROJECTTYPE', 'T_P_PROJECTINFO.TypeID', '=', 'T_P_PROJECTTYPE.TypeID')
                 ->join("$diffTableName", 'T_P_PROJECTINFO.ProjectID', '=', "$diffTableName.ProjectID")
                 ->join("users", 'T_P_PROJECTINFO.UserID', '=', 'users.UserID')
-                ->select("T_P_PROJECTINFO.ProjectID",'T_P_PROJECTINFO.TypeID','T_P_PROJECTINFO.UserID','PublishState','Member','CertifyState','PublishTime','PhoneNumber','ServiceID','TypeName','ViewCount','CollectionCount','ProArea','WordDes','VoiceDes','PictureDes1','PictureDes2','PictureDes3','TotalMoney','AssetType')->where($where)->get()->toArray();
+                ->select("T_P_PROJECTINFO.ProjectID",'T_P_PROJECTINFO.TypeID','T_P_PROJECTINFO.UserID','PublishState','Publisher','Price','Member','CertifyState','PublishTime','PhoneNumber','ServiceID','TypeName','ViewCount','CollectionCount','ProArea','WordDes','VoiceDes','CompanyDes','PictureDes1','PictureDes2','PictureDes3','TotalMoney','AssetType')->where($where)->get()->toArray();
                 break;
 
             case '10':
                 $project = Project::join('T_P_PROJECTTYPE', 'T_P_PROJECTINFO.TypeID', '=', 'T_P_PROJECTTYPE.TypeID')
                 ->join("$diffTableName", 'T_P_PROJECTINFO.ProjectID', '=', "$diffTableName.ProjectID")
                 ->join("users", 'T_P_PROJECTINFO.UserID', '=', 'users.UserID')
-                ->select("T_P_PROJECTINFO.ProjectID",'T_P_PROJECTINFO.TypeID','T_P_PROJECTINFO.UserID','PublishState','Member','CertifyState','PublishTime','PhoneNumber','ServiceID','TypeName','ViewCount','CollectionCount','ProArea','WordDes','VoiceDes','PictureDes1','PictureDes2','PictureDes3','Informant','AssetType')->where($where)->get()->toArray();
+                ->select("T_P_PROJECTINFO.ProjectID",'T_P_PROJECTINFO.TypeID','T_P_PROJECTINFO.UserID','PublishState','Publisher','Price','Member','CertifyState','PublishTime','PhoneNumber','ServiceID','TypeName','ViewCount','CollectionCount','ProArea','WordDes','VoiceDes','CompanyDes','PictureDes1','PictureDes2','PictureDes3','Informant','AssetType')->where($where)->get()->toArray();
                 break;
 
             case '11':
                 $project = Project::join('T_P_PROJECTTYPE', 'T_P_PROJECTINFO.TypeID', '=', 'T_P_PROJECTTYPE.TypeID')
                 ->join("$diffTableName", 'T_P_PROJECTINFO.ProjectID', '=', "$diffTableName.ProjectID")
                 ->join("users", 'T_P_PROJECTINFO.UserID', '=', 'users.UserID')
-                ->select("T_P_PROJECTINFO.ProjectID",'T_P_PROJECTINFO.TypeID','T_P_PROJECTINFO.UserID','PublishState','Member','CertifyState','PublishTime','PhoneNumber','ServiceID','TypeName','ViewCount','CollectionCount','ProArea','WordDes','VoiceDes','PictureDes1','PictureDes2','PictureDes3','Requirement','AssetType')->where($where)->get()->toArray();
+                ->select("T_P_PROJECTINFO.ProjectID",'T_P_PROJECTINFO.TypeID','T_P_PROJECTINFO.UserID','PublishState','Publisher','Price','Member','CertifyState','PublishTime','PhoneNumber','ServiceID','TypeName','ViewCount','CollectionCount','ProArea','WordDes','VoiceDes','CompanyDes','PictureDes1','PictureDes2','PictureDes3','Requirement','AssetType')->where($where)->get()->toArray();
                 break;
 
             case '12':
                 $project = Project::join('T_P_PROJECTTYPE', 'T_P_PROJECTINFO.TypeID', '=', 'T_P_PROJECTTYPE.TypeID')
                 ->join("$diffTableName", 'T_P_PROJECTINFO.ProjectID', '=', "$diffTableName.ProjectID")
                 ->join("users", 'T_P_PROJECTINFO.UserID', '=', 'users.UserID')
-                ->select("T_P_PROJECTINFO.ProjectID",'T_P_PROJECTINFO.TypeID','T_P_PROJECTINFO.UserID','PublishState','Member','CertifyState','PublishTime','PhoneNumber','ServiceID','TypeName','ViewCount','CollectionCount','ProArea','WordDes','VoiceDes','PictureDes1','PictureDes2','PictureDes3','AssetType','Corpore','TransferMoney')->where($where)->get()->toArray();
+                ->select("T_P_PROJECTINFO.ProjectID",'T_P_PROJECTINFO.TypeID','T_P_PROJECTINFO.UserID','PublishState','Publisher','Price','Member','CertifyState','PublishTime','PhoneNumber','ServiceID','TypeName','ViewCount','CollectionCount','ProArea','WordDes','VoiceDes','CompanyDes','PictureDes1','PictureDes2','PictureDes3','AssetType','Corpore','TransferMoney')->where($where)->get()->toArray();
                 break;
 
             case '13':
                 $project = Project::join('T_P_PROJECTTYPE', 'T_P_PROJECTINFO.TypeID', '=', 'T_P_PROJECTTYPE.TypeID')
                 ->join("$diffTableName", 'T_P_PROJECTINFO.ProjectID', '=', "$diffTableName.ProjectID")
                 ->join("users", 'T_P_PROJECTINFO.UserID', '=', 'users.UserID')
-                ->select("T_P_PROJECTINFO.ProjectID",'T_P_PROJECTINFO.TypeID','T_P_PROJECTINFO.UserID','PublishState','Member','CertifyState','PublishTime','PhoneNumber','ServiceID','TypeName','ViewCount','CollectionCount','ProArea','WordDes','VoiceDes','PictureDes1','PictureDes2','PictureDes3','AssetType','Buyer')->where($where)->get()->toArray();
+                ->select("T_P_PROJECTINFO.ProjectID",'T_P_PROJECTINFO.TypeID','T_P_PROJECTINFO.UserID','PublishState','Publisher','Price','Member','CertifyState','PublishTime','PhoneNumber','ServiceID','TypeName','ViewCount','CollectionCount','ProArea','WordDes','VoiceDes','CompanyDes','PictureDes1','PictureDes2','PictureDes3','AssetType','Buyer')->where($where)->get()->toArray();
                 break;
 
             case '14':
                 $project = Project::join('T_P_PROJECTTYPE', 'T_P_PROJECTINFO.TypeID', '=', 'T_P_PROJECTTYPE.TypeID')
                 ->join("$diffTableName", 'T_P_PROJECTINFO.ProjectID', '=', "$diffTableName.ProjectID")
                 ->join("users", 'T_P_PROJECTINFO.UserID', '=', 'users.UserID')
-                ->select("T_P_PROJECTINFO.ProjectID",'T_P_PROJECTINFO.TypeID','T_P_PROJECTINFO.UserID','PublishState','Member','CertifyState','PublishTime','PhoneNumber','ServiceID','TypeName','ViewCount','CollectionCount','ProArea','WordDes','VoiceDes','PictureDes1','PictureDes2','PictureDes3','AssetType','TotalMoney','TransferMoney')->where($where)->get()->toArray();
+                ->select("T_P_PROJECTINFO.ProjectID",'T_P_PROJECTINFO.TypeID','T_P_PROJECTINFO.UserID','PublishState','Publisher','Price','Member','CertifyState','PublishTime','PhoneNumber','ServiceID','TypeName','ViewCount','CollectionCount','ProArea','WordDes','VoiceDes','CompanyDes','PictureDes1','PictureDes2','PictureDes3','AssetType','TotalMoney','TransferMoney')->where($where)->get()->toArray();
                 break;
 
             case '15':
                 $project = Project::join('T_P_PROJECTTYPE', 'T_P_PROJECTINFO.TypeID', '=', 'T_P_PROJECTTYPE.TypeID')
                 ->join("$diffTableName", 'T_P_PROJECTINFO.ProjectID', '=', "$diffTableName.ProjectID")
                 ->join("users", 'T_P_PROJECTINFO.UserID', '=', 'users.UserID')
-                ->select("T_P_PROJECTINFO.ProjectID",'T_P_PROJECTINFO.TypeID','T_P_PROJECTINFO.UserID','PublishState','Member','CertifyState','PublishTime','PhoneNumber','ServiceID','TypeName','ViewCount','CollectionCount','ProArea','WordDes','VoiceDes','PictureDes1','PictureDes2','PictureDes3','AssetType','InvestType','Rate','Year')->where($where)->get()->toArray();
+                ->select("T_P_PROJECTINFO.ProjectID",'T_P_PROJECTINFO.TypeID','T_P_PROJECTINFO.UserID','PublishState','Publisher','Price','Member','CertifyState','PublishTime','PhoneNumber','ServiceID','TypeName','ViewCount','CollectionCount','ProArea','WordDes','VoiceDes','CompanyDes','PictureDes1','PictureDes2','PictureDes3','AssetType','InvestType','Rate','Year')->where($where)->get()->toArray();
                 break;
         }
         $project = $project[0];
@@ -309,21 +395,34 @@ class ProjectController extends BaseController
         $UserID = $this->auth->user() ? $this->auth->user()->toArray()['userid'] : null;
         $project['CollectFlag'] = 0;
         $project['RushFlag'] = 0;
+        $project['PayFlag'] = 0;
+        $project['Account'] = 0;
         if ($UserID) {
             $tmp = DB::table('T_P_COLLECTION')->where(['Type' => 1, 'ItemID' => $id, 'UserID' => $UserID])->get();
             if ($tmp) {
-            $project['CollectFlag'] = 1;
+                $project['CollectFlag'] = 1;
             } else {
-            $project['CollectFlag'] = 0;
+                $project['CollectFlag'] = 0;
             }
 
             $ServiceID = Service::where('UserID',$UserID)->pluck('ServiceID');
             $tmpp = DB::table('T_P_RUSHPROJECT')->where(['ProjectID'=>$id, 'ServiceID'=>$ServiceID])->where('CooperateFlag','<>',3)->get();
             if ($tmpp) {
-            $project['RushFlag'] = 1;
+                $project['RushFlag'] = 1;
             } else {
-            $project['RushFlag'] = 0;
+                $project['RushFlag'] = 0;
             }
+
+            //支付标记
+            $tmppp = DB::table('T_U_MONEY')->where('UserID', $UserID)->where('ProjectID', $id)->get();
+            $tmpppp = DB::table('T_P_RUSHPROJECT')->where(['ServiceID'=>$ServiceID, 'ProjectID'=>$id])->get();
+            if ($tmppp || $tmpppp) {
+                $project['PayFlag'] = 1;
+            } else {
+                $project['PayFlag'] = 0;
+            }
+
+            $project['Account'] = User::where('userid', $UserID)->pluck('Account');
         }
 
 
