@@ -119,6 +119,18 @@ $api->get('ie/auth/login', 'App\Http\Controllers\Api\V1\AuthenticateController@a
     //区分app不同步
     $api->get('project/lists', 'App\Http\Controllers\Api\V1\ProjectController@proList2');
 
+    //亮亮10.14
+    //报名接口
+    $api->post('enroll', 'App\Http\Controllers\Api\V1\ZLLController@enroll');
+    //亮亮10.18
+    //报名接口
+    $api->post('report', 'App\Http\Controllers\Api\V1\ZLLController@report');
+    //亮亮10.20
+    //可以搜出收费信息（旧版本不能搜出）
+    $api->post('searchs', 'App\Http\Controllers\Api\V1\ToolController@searchs');
+    //查看服务方次数
+    $api->post('count/service', 'App\Http\Controllers\Api\V1\ZLLController@checkService');
+
 });
 
 // 私有接口，需要登录
@@ -216,6 +228,9 @@ $api->version('v1', ['protected' => true, 'middleware'=>['access','cross']], fun
     //亮亮9.27
     //苹果支付成功回调接口
     $api->post('apple/pay','App\Http\Controllers\Api\V1\ZLLController@applePay');
+    //亮亮10.18
+    //获取信息支付标记
+    $api->post('ispay','App\Http\Controllers\Api\V1\ZLLController@getPayFlag');
 
 });
 

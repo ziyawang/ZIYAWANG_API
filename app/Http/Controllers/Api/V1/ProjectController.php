@@ -424,6 +424,12 @@ class ProjectController extends BaseController
 
             $project['Account'] = User::where('userid', $UserID)->pluck('Account');
         }
+        $project['CompanyDesPC'] = $project['CompanyDes'];
+        $project['CompanyDes'] = str_replace('</p>', '', $project['CompanyDes']);
+        $project['CompanyDes'] = str_replace('<p>', '', $project['CompanyDes']);
+        $project['CompanyDes'] = str_replace('<br />', '', $project['CompanyDes']);
+        $project['CompanyDes'] = str_replace('&nbsp;', ' ', $project['CompanyDes']);
+
 
 
         return $project;

@@ -400,7 +400,7 @@ class UserController extends BaseController
             $item['Informant'] = isset($item['Informant']) ? $item['Informant'] : '';
             $item['Buyer'] = isset($item['Buyer']) ? $item['Buyer'] : '';
             $item['ProjectNumber'] = 'FB' . sprintf("%05d", $item['ProjectID']);
-            $item['PublishTime'] = substr($item['PublishTime'], 0,10);
+            // $item['PublishTime'] = substr($item['PublishTime'], 0,10);
             $item['InvestType'] = isset($item['InvestType']) ? $item['InvestType'] : '';
             $item['Year'] = isset($item['Year']) ? $item['Year'] : '';
             $data[] = $item;
@@ -619,6 +619,7 @@ class UserController extends BaseController
             $item['PublishTime'] = substr($item['PublishTime'], 0,10);
             $item['InvestType'] = isset($item['InvestType']) ? $item['InvestType'] : '';
             $item['Year'] = isset($item['Year']) ? $item['Year'] : '';
+            $item['RushTime'] = DB::table('T_P_RUSHPROJECT')->where(['ServiceID'=>$ServiceID,'ProjectID'=>$pro])->pluck('RushTime');
             $data[] = $item;
         }
         return $this->response->array(['counts'=>$counts, 'pages'=>$pages, 'data'=>$data, 'currentpage'=>$startpage]);

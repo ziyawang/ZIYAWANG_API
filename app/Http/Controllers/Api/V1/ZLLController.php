@@ -151,7 +151,7 @@ class ZLLController extends BaseController
         }
         $channel = strtolower($payload['channel']);
         $amount = $payload['amount'];
-        $ProjectID = $payload['ProjectID'];
+        $ProjectID = isset($payload['ProjectID'])?$payload['ProjectID']: null;
         $orderNo = 'CZ' . substr(time(),4) . mt_rand(1000,9999);
         $subject = isset($payload['subject']) ? $payload['subject']:'充值金额';
         $user = $this->auth->user();
@@ -530,6 +530,7 @@ class ZLLController extends BaseController
         $data['Channel'] = 'iap';
         $data['Operates'] = '充值' . $data['Money'] . '芽币';
         $data['Account'] = $user->Account + $amount/10;
+        $data['BackNumber'] = $BackNumber;
 
         $user->Account = $data['Account'];
 
@@ -549,6 +550,114 @@ class ZLLController extends BaseController
         }
         return $this->response->array(['status_code'=>'200', 'msg'=>'插入记录成功！']);
 
+    }
+
+    public function enroll(){
+        $payload = app('request')->all();
+        $str = "姓名：" . $payload['name'] . "\n";
+        $str = $str . "公司名称：" . $payload['company'] . "\n";
+        $str = $str . "电话：" . $payload['phonenumber'] . "\n";
+        $str = $str . "邮箱：" . (isset($payload['mail'])?$payload['mail']:'') . "\n";
+        $str = $str . "职务：" . (isset($payload['job'])?$payload['job']:'') . "\n";
+        $str = $str . "报名时间：" . date('Y-m-d H:i:s', time()) . "\n";
+        $str = $str . "用户IP：" . $_SERVER["REMOTE_ADDR"] . "\n\n\n";
+
+        file_put_contents('./lists.txt', $str, FILE_APPEND);
+        return $this->response->array(['status_code'=>'200', 'msg'=>'恭喜您报名成功！工作人员近期会联系您，确认报名信息，请保持电话畅通！']);
+    }
+
+    public function getPayFlag(){
+        $payload = app('request')->all();
+        $ProjectID = $payload['ProjectID'];
+        $UserID = $this->auth->user() ? $this->auth->user()->toArray()['userid'] : null;
+        if(!$UserID){
+            return $this->response->array(['status_code' => '400', 'msg' => 'token错误！']);
+        }
+        $ServiceID = Service::where('UserID',$UserID)->pluck('ServiceID');
+        //支付标记
+        $tmp = DB::table('T_U_MONEY')->where('UserID', $UserID)->where('ProjectID', $ProjectID)->get();
+        $tmpp = DB::table('T_P_RUSHPROJECT')->where(['ServiceID'=>$ServiceID, 'ProjectID'=>$ProjectID])->get();
+        if ($tmp || $tmpp) {
+            $PayFlag = 1;
+        } else {
+            $PayFlag = 0;
+        }
+        return $this->response->array(['status_code' => '200', 'PayFlag' => $PayFlag]);        
+    }
+
+    public function report(){
+        $payload = app('request')->all();
+        $data = [];
+        $data['UserID'] = $this->auth->user() ? $this->auth->user()->toArray()['userid'] : 0;
+        // if(!$data['UserID']){
+        //     return $this->response->array(['status_code' => '400', 'msg' => 'token错误！']);
+        // }
+        $data['Type'] = (int)$payload['Type'];
+        $data['ItemID'] = $payload['ItemID'];
+        $data['Channel'] = $payload['Channel'];
+        $data['ReasonID'] = trim($payload['ReasonID'], ',');
+        $reasons = explode(',', $data['ReasonID']);
+        $data['Content'] = "";
+        foreach ($reasons as $reason) {
+            $reason = (int)$reason;    
+            switch ($reason) {
+                case 1:
+                    if($data['Type'] == 1){
+                        $data['Content'] .= "已合作或已处置；";
+                    } elseif($data['Type'] == 2){
+                        $data['Content'] .= "服务方描述与实事不符；";
+                    }
+                    break;
+
+                case 2:
+                    $data['Content'] .= "虚假信息；";
+                    break;
+                
+                case 3:
+                    $data['Content'] .= "泄露隐私；";
+                    break;
+
+                case 4:
+                    $data['Content'] .= "垃圾广告；";
+                    break;
+
+                case 5:
+                    $data['Content'] .= "人身攻击；";
+                    break;
+
+                case 6:
+                    $data['Content'] .= "无法联系；";
+                    break;
+            }
+        }
+        $data['Content'] = rtrim($data['Content'], '；');
+        $data['created_at'] = date('Y-m-d H:i:s', time());
+        $res = DB::table("T_U_REPORT")->insert($data);
+        if($res){
+            return $this->response->array(['status_code' => '200', 'msg' => '举报成功，请等待客服审核查实！']);
+        } else {
+            return $this->response->array(['status_code' => '200', 'msg' => '未知错误，请稍后重试！']);
+        }
+    }
+
+    public function checkService(){
+        $payload = app('request')->all();
+        $data = [];
+        $data['UserID'] = $this->auth->user() ? $this->auth->user()->toArray()['userid'] : 0;
+        $data['ServiceID'] = $payload['ServiceID'];
+        $data['Channel'] = $payload['Channel'];
+        $data['IP'] = $_SERVER["REMOTE_ADDR"];
+        $data['created_at'] = date('Y-m-d H:i:s', time());
+        DB::beginTransaction();
+        try {
+            DB::table("T_C_SERVICE")->insert($data);
+            SERVICE::where('ServiceID', $payload['ServiceID'])->increment('CheckCount');
+
+            DB::commit();
+        } catch (Exception $e){
+            DB::rollback();
+            throw $e;
+        }
     }
 
 }

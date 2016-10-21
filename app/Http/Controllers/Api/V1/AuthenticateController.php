@@ -33,7 +33,7 @@ class AuthenticateController extends Controller
             'smscode' => ['required', 'min:6']
         ];
 
-        $payload = app('request')->only('phonenumber', 'password', 'smscode');
+        $payload = app('request')->all();
         $validator = app('validator')->make($payload, $rules);
 
         // 手机验证码验证
@@ -52,9 +52,12 @@ class AuthenticateController extends Controller
             return $this->response->array(['status_code' => '401', 'msg' => $validator->errors()]);
         }
 
+        $Channel = isset($payload['Channel'])? $payload['Channel'] : '';
+
         // 创建用户
         $res = User::create([
             'phonenumber' => $payload['phonenumber'],
+            'Channel' => $Channel,
             'password' => bcrypt($payload['password']),
         ]);
 
@@ -76,6 +79,10 @@ class AuthenticateController extends Controller
             //生成token
             $user = User::where('phonenumber', $payload['phonenumber'])->first();
             $token = JWTAuth::fromUser($user);
+
+            $IM = new IMController();
+            $IM->get_rongcloud_token($user->userid);
+
             return $this->response->array(['status_code' => '200', 'msg' => 'Create User Success', 'token' => $token, 'role' => '0', 'UserID' => $user->userid, 'UserPicture' => $user->UserPicture]);
         } else {
             return $this->response->array(['status_code' => '501', 'msg' => 'Create User Error']);
@@ -136,6 +143,8 @@ class AuthenticateController extends Controller
         if ($res) {
             // 通过用户实例，获取jwt-token
             $token = JWTAuth::fromUser($user);
+            $IM = new IMController();
+            $IM->get_rongcloud_token($user->userid);
             if($role == 1) {
                 return $this->response->array(['status_code' => '200', 'token' => $token, 'role' => $role, 'UserID' => $user->userid, 'UserPicture' => $user->UserPicture, 'ServiceName' => $ServiceName]);
             } else {
@@ -253,6 +262,9 @@ class AuthenticateController extends Controller
         $hascertify = Service::join('T_P_SERVICECERTIFY', 'T_P_SERVICECERTIFY.ServiceID', '=', 'T_U_SERVICEINFO.ServiceID')->where(['T_U_SERVICEINFO.UserID'=>$user->userid, 'T_P_SERVICECERTIFY.State'=>1])->count();
 
         $isservice = Service::where('UserID', $user->userid)->count();
+
+        $IM = new IMController();
+        $IM->get_rongcloud_token($user->userid);
 
         if($isservice == 0 && $hascertify == 0){
             $role = '0';
