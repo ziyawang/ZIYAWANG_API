@@ -33,22 +33,22 @@ class UserController extends BaseController
         $ServiceArea = (isset($payload['ServiceArea']) && $payload['ServiceArea'] != 'null' && $payload['ServiceArea'] != '')?  $payload['ServiceArea'] : null;
         
         if(!$ServiceType && !$ServiceArea) {
-            $services = DB::table('T_P_SERVICECERTIFY')->skip($skipnum)->take($pagecount)->where('T_P_SERVICECERTIFY.State','1')->orderBy('ServiceID','desc')->lists('ServiceID');
-            $counts = DB::table('T_P_SERVICECERTIFY')->where('T_P_SERVICECERTIFY.State','1')->count();
+            $services = DB::table('T_P_SERVICECERTIFY')->skip($skipnum)->take($pagecount)->where('T_P_SERVICECERTIFY.State','1')->where('ServiceID', '<>', '839')->orderBy('ServiceID','desc')->lists('ServiceID');
+            $counts = DB::table('T_P_SERVICECERTIFY')->where('T_P_SERVICECERTIFY.State','1')->where('ServiceID', '<>', '839')->count();
             $pages = ceil($counts/$pagecount);
         } elseif ($ServiceType && !$ServiceArea) {
-            $services = Service::where('ServiceType','like','%'.$ServiceType.'%')->orderBy('ServiceID','desc')->lists('ServiceID');
+            $services = Service::where('ServiceType','like','%'.$ServiceType.'%')->where('ServiceID', '<>', '839')->orderBy('ServiceID','desc')->lists('ServiceID');
             $counts = DB::table('T_P_SERVICECERTIFY')->where('T_P_SERVICECERTIFY.State','1')->whereIn('ServiceID',$services)->count();
             $services = DB::table('T_P_SERVICECERTIFY')->skip($skipnum)->take($pagecount)->where('T_P_SERVICECERTIFY.State','1')->whereIn('ServiceID',$services)->orderBy('ServiceID','desc')->lists('ServiceID');
             $pages = ceil($counts/$pagecount);
         } elseif (!$ServiceType && $ServiceArea) {
-            $services = Service::where('ServiceArea','like','%'.$ServiceArea.'%')->orWhere('ServiceArea','like','%全国%')->orderBy('ServiceID','desc')->lists('ServiceID');
+            $services = Service::where('ServiceArea','like','%'.$ServiceArea.'%')->orWhere('ServiceArea','like','%全国%')->where('ServiceID', '<>', '839')->orderBy('ServiceID','desc')->lists('ServiceID');
             $counts = DB::table('T_P_SERVICECERTIFY')->where('T_P_SERVICECERTIFY.State','1')->whereIn('ServiceID',$services)->count();
             $services = DB::table('T_P_SERVICECERTIFY')->skip($skipnum)->take($pagecount)->where('T_P_SERVICECERTIFY.State','1')->whereIn('ServiceID',$services)->orderBy('ServiceID','desc')->lists('ServiceID');
             $pages = ceil($counts/$pagecount);
         } elseif ($ServiceType && $ServiceArea) {
-            $services1 = Service::where('ServiceArea','like','%'.$ServiceArea.'%')->orWhere('ServiceArea','like','%全国%')->orderBy('ServiceID','desc')->lists('ServiceID')->toArray();
-            $services2 = Service::where('ServiceType','like','%'.$ServiceType.'%')->orderBy('ServiceID','desc')->lists('ServiceID')->toArray();
+            $services1 = Service::where('ServiceArea','like','%'.$ServiceArea.'%')->orWhere('ServiceArea','like','%全国%')->where('ServiceID', '<>', '839')->orderBy('ServiceID','desc')->lists('ServiceID')->toArray();
+            $services2 = Service::where('ServiceType','like','%'.$ServiceType.'%')->where('ServiceID', '<>', '839')->orderBy('ServiceID','desc')->lists('ServiceID')->toArray();
             $services = array_intersect($services1, $services2);
             $counts = DB::table('T_P_SERVICECERTIFY')->where('T_P_SERVICECERTIFY.State','1')->whereIn('ServiceID',$services)->count();
             $services = DB::table('T_P_SERVICECERTIFY')->skip($skipnum)->take($pagecount)->where('T_P_SERVICECERTIFY.State','1')->whereIn('ServiceID',$services)->orderBy('ServiceID','desc')->lists('ServiceID');

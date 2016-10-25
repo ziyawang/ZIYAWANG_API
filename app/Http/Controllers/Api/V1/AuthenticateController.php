@@ -249,7 +249,8 @@ class AuthenticateController extends Controller
 
         //写登录log
         $log_path = base_path().'/storage/logs/data/';
-        $log_file_name = date('Ymd', time()) . '.log';
+        $log_file_name = 'login.log';
+        // $log_file_name = date('Ymd', time()) . '.log';
         $Logs = new \App\Logs($log_path,$log_file_name);
         $log = array();
         $log['phonenumber'] = $payload['phonenumber'];

@@ -43,6 +43,7 @@ class ProjectController extends BaseController
         // }
 
         $payload = app('request')->all();
+        $Channel = isset($payload['Channel'])?$payload['Channel']:'PC';
         // $payload = app('request')->except('a');
         $proType = $payload['TypeID'];
         $diffTableName = DB::table('T_P_PROJECTTYPE')->where('TypeID',$proType)->pluck('TableName');
@@ -52,13 +53,15 @@ class ProjectController extends BaseController
             $diffData['TotalMoney'] = $diffData['TotalMoney']/10000;
         }
 
+        $user = $this->auth->user()->toArray();
+
         //事务处理,往项目信息表projectinfo和项目属性表spec01表插入数据
         DB::beginTransaction();
         try {
             $project = new Project();
 
             // $project->UserID = 1;
-            $project->UserID = $this->auth->user()->toArray()['userid'];
+            $project->UserID = $user['userid'];
             $project->TypeID = $payload['TypeID'];
             $project->ProArea = $payload['ProArea'];
             $project->WordDes = $payload['WordDes'];
@@ -67,6 +70,7 @@ class ProjectController extends BaseController
             $project->PictureDes2 = $payload['PictureDes2'];
             $project->PictureDes3 = $payload['PictureDes3'];
             $project->PublishTime = date('Y-m-d H:i:s',time());
+            $project->Channel = $Channel;
             $project->save();
             
             // DB::table('T_P_PROJECTINFO')->create(['TypeID' => 1,'UserID' => 1, 'aaa' => '111']) db不能用create方法 公共的info表可以直接用create方法 spec要用排除没用的数据方法
@@ -82,6 +86,35 @@ class ProjectController extends BaseController
 
         // 创建项目成功
         if (!isset($e)) {
+            //编写消息
+            $Text = [];
+            $Message = [];
+            $Text['Title'] = '温馨提示';
+            $Text['Text'] = '资芽网温馨提示，任何关于合作的前期收费要求，请慎重选择，如有疑问，请咨询资芽网客服：400-8988-557。';
+            $Text['Time'] = date("Y-m-d H:i:s",strtotime('now'));
+            //发送消息
+            $Message['TextID'] = DB::table('T_M_MESSAGETEXT')->insertGetId($Text);
+            $Message['SendID'] = 0;
+            $Message['RecID'] = $user['userid'];
+            $Message['Status'] = 0;
+            DB::table('T_M_MESSAGE')->insert($Message);
+            //发送短信
+            require(base_path().'/vendor/alidayu/TopSdk.php');
+            date_default_timezone_set('Asia/Shanghai');
+
+            $c = new \TopClient;
+            $c->appkey = '23401348';//需要加引号
+            $c->secretKey = 'b192055dbd09af7e7e98539698f67716';
+            $c->format = 'xml';
+            $req = new \AlibabaAliqinFcSmsNumSendRequest;
+            $req->setExtend("");//暂时不填
+            $req->setSmsType("normal");//默认可用
+            $req->setSmsFreeSignName("资芽网");//设置短信免费符号名(需在阿里认证中有记录的)
+            $req->setSmsParam('');//设置短信参数
+            $req->setRecNum($user['phonenumber']);//设置接受手机号
+            $req->setSmsTemplateCode("SMS_21720318");
+            $resp = $c->execute($req);//执行
+
             return $this->response->array(['success' => 'Create Pro Success']);
         } else {
             return $this->response->array(['error' => 'Create Pro Error']);
