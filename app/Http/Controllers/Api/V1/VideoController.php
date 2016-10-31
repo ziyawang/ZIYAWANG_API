@@ -139,6 +139,34 @@ class VideoController extends BaseController
              } else {
                 $data['CollectFlag'] = 0;
              }
+
+            //写查看视频log
+            $log_path = base_path().'/storage/logs/data/';
+            $log_file_name = 'check.log';
+            // $log_file_name = date('Ymd', time()) . '.log';
+            $Logs = new \App\Logs($log_path,$log_file_name);
+            $log = array();
+            $log['userid'] = $UserID;
+            $log['type'] = 2;
+            $log['itemid'] = $id;
+            $log['time'] = time();
+            $log['ip'] = $_SERVER["REMOTE_ADDR"];
+            $logstr = serialize($log);
+            $res = $Logs->setLog($logstr); 
+        } else {
+            //写查看信息log
+            $log_path = base_path().'/storage/logs/data/';
+            $log_file_name = 'check.log';
+            // $log_file_name = date('Ymd', time()) . '.log';
+            $Logs = new \App\Logs($log_path,$log_file_name);
+            $log = array();
+            $log['userid'] = 0;
+            $log['type'] = 2;
+            $log['itemid'] = $id;
+            $log['time'] = time();
+            $log['ip'] = $_SERVER["REMOTE_ADDR"];
+            $logstr = serialize($log);
+            $res = $Logs->setLog($logstr); 
         }
         return $data;
     }

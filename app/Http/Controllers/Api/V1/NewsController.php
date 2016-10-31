@@ -107,6 +107,7 @@ class NewsController extends BaseController
      */
     public function getInfo($id) {
         $data = News::select('NewsID','NewsTitle','NewsContent','NewsLogo','NewsThumb','NewsLabel','PublishTime','NewsAuthor','ViewCount','CollectionCount','Brief')->where('NewsID',$id)->first()->toArray();
+
         return $data;
     }
 
@@ -132,6 +133,35 @@ class NewsController extends BaseController
              } else {
                 $data['CollectFlag'] = 0;
              }
+
+
+            //写查看新闻log
+            $log_path = base_path().'/storage/logs/data/';
+            $log_file_name = 'check.log';
+            // $log_file_name = date('Ymd', time()) . '.log';
+            $Logs = new \App\Logs($log_path,$log_file_name);
+            $log = array();
+            $log['userid'] = $UserID;
+            $log['type'] = 3;
+            $log['itemid'] = $id;
+            $log['time'] = time();
+            $log['ip'] = $_SERVER["REMOTE_ADDR"];
+            $logstr = serialize($log);
+            $res = $Logs->setLog($logstr); 
+        } else {
+            //写查看信息log
+            $log_path = base_path().'/storage/logs/data/';
+            $log_file_name = 'check.log';
+            // $log_file_name = date('Ymd', time()) . '.log';
+            $Logs = new \App\Logs($log_path,$log_file_name);
+            $log = array();
+            $log['userid'] = 0;
+            $log['type'] = 3;
+            $log['itemid'] = $id;
+            $log['time'] = time();
+            $log['ip'] = $_SERVER["REMOTE_ADDR"];
+            $logstr = serialize($log);
+            $res = $Logs->setLog($logstr); 
         }
         return $this->response->array(['data'=>$data,'pre'=>$pre, 'next'=>$next]);
     }

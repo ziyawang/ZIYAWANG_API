@@ -130,6 +130,9 @@ $api->get('ie/auth/login', 'App\Http\Controllers\Api\V1\AuthenticateController@a
     $api->post('searchs', 'App\Http\Controllers\Api\V1\ToolController@searchs');
     //查看服务方次数
     $api->post('count/service', 'App\Http\Controllers\Api\V1\ZLLController@checkService');
+    //亮亮10.25
+    //app启动接口    
+    $api->post('app/start', 'App\Http\Controllers\Api\V1\ZLLController@appStart');
 
 });
 

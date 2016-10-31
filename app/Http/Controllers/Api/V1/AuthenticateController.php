@@ -253,9 +253,11 @@ class AuthenticateController extends Controller
         // $log_file_name = date('Ymd', time()) . '.log';
         $Logs = new \App\Logs($log_path,$log_file_name);
         $log = array();
+        $log['userid'] = $user->userid;
         $log['phonenumber'] = $payload['phonenumber'];
         $log['time'] = time();
         $log['ip'] = $_SERVER["REMOTE_ADDR"];
+        $log['channel'] = 'PC';
         $logstr = serialize($log);
         $res = $Logs->setLog($logstr); 
 

@@ -416,7 +416,8 @@ class ZLLController extends BaseController
         $data['created_at'] = date('Y-m-d H:i:s',time());
         $data['IP'] = $_SERVER['REMOTE_ADDR'];
         $data['timestamp'] = time();
-        $data['Operates'] = "查看信息编号为:FB" . sprintf("%05d", $ProjectID) . "的信息，消费" . $price . "芽币";
+        $TypeName = Project::join('T_P_PROJECTTYPE', 'T_P_PROJECTINFO.TypeID', '=', 'T_P_PROJECTTYPE.TypeID')->where('ProjectID',$ProjectID)->pluck('TypeName');
+        $data['Operates'] = "查看信息编号为:FB" . sprintf("%05d", $ProjectID) . "的" . $TypeName . "，消费" . $price . "芽币";
 
 
         DB::beginTransaction();
@@ -657,6 +658,42 @@ class ZLLController extends BaseController
         } catch (Exception $e){
             DB::rollback();
             throw $e;
+        }
+    }
+
+    public function appStart(){
+        $payload = app('request')->all();
+
+        $User = $this->auth->user() ? $this->auth->user()->toArray(): null;
+
+        if($User){
+            //写登录log
+            $log_path = base_path().'/storage/logs/data/';
+            $log_file_name = 'login.log';
+            // $log_file_name = date('Ymd', time()) . '.log';
+            $Logs = new \App\Logs($log_path,$log_file_name);
+            $log = array();
+            $log['userid'] = $User['userid'];
+            $log['phonenumber'] = $User['phonenumber'];
+            $log['time'] = time();
+            $log['ip'] = $_SERVER["REMOTE_ADDR"];
+            $log['channel'] = $payload['Channel'];
+            $logstr = serialize($log);
+            $res = $Logs->setLog($logstr); 
+        } else {
+            //写登录log
+            $log_path = base_path().'/storage/logs/data/';
+            $log_file_name = 'login.log';
+            // $log_file_name = date('Ymd', time()) . '.log';
+            $Logs = new \App\Logs($log_path,$log_file_name);
+            $log = array();
+            $log['userid'] = 0;
+            $log['phonenumber'] = $User['phonenumber'];
+            $log['time'] = time();
+            $log['ip'] = $_SERVER["REMOTE_ADDR"];
+            $log['channel'] = $payload['Channel'];
+            $logstr = serialize($log);
+            $res = $Logs->setLog($logstr); 
         }
     }
 

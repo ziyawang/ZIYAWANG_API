@@ -99,21 +99,23 @@ class ProjectController extends BaseController
             $Message['Status'] = 0;
             DB::table('T_M_MESSAGE')->insert($Message);
             //发送短信
-            require(base_path().'/vendor/alidayu/TopSdk.php');
-            date_default_timezone_set('Asia/Shanghai');
+            if($user['phonenumber'] != "18721748010"){
+                require(base_path().'/vendor/alidayu/TopSdk.php');
+                date_default_timezone_set('Asia/Shanghai');
 
-            $c = new \TopClient;
-            $c->appkey = '23401348';//需要加引号
-            $c->secretKey = 'b192055dbd09af7e7e98539698f67716';
-            $c->format = 'xml';
-            $req = new \AlibabaAliqinFcSmsNumSendRequest;
-            $req->setExtend("");//暂时不填
-            $req->setSmsType("normal");//默认可用
-            $req->setSmsFreeSignName("资芽网");//设置短信免费符号名(需在阿里认证中有记录的)
-            $req->setSmsParam('');//设置短信参数
-            $req->setRecNum($user['phonenumber']);//设置接受手机号
-            $req->setSmsTemplateCode("SMS_21720318");
-            $resp = $c->execute($req);//执行
+                $c = new \TopClient;
+                $c->appkey = '23401348';//需要加引号
+                $c->secretKey = 'b192055dbd09af7e7e98539698f67716';
+                $c->format = 'xml';
+                $req = new \AlibabaAliqinFcSmsNumSendRequest;
+                $req->setExtend("");//暂时不填
+                $req->setSmsType("normal");//默认可用
+                $req->setSmsFreeSignName("资芽网");//设置短信免费符号名(需在阿里认证中有记录的)
+                $req->setSmsParam('');//设置短信参数
+                $req->setRecNum($user['phonenumber']);//设置接受手机号
+                $req->setSmsTemplateCode("SMS_21720318");
+                $resp = $c->execute($req);//执行
+            }
 
             return $this->response->array(['success' => 'Create Pro Success']);
         } else {
@@ -522,6 +524,35 @@ class ProjectController extends BaseController
         $picture = User::where('UserID',$data['UserID'])->pluck('UserPicture');
         $data['UserPicture'] = $picture;   
         $data['ProjectNumber'] = 'FB' . sprintf("%05d", $data['ProjectID']);
+        if($UserID){
+            //写查看信息log
+            $log_path = base_path().'/storage/logs/data/';
+            $log_file_name = 'check.log';
+            // $log_file_name = date('Ymd', time()) . '.log';
+            $Logs = new \App\Logs($log_path,$log_file_name);
+            $log = array();
+            $log['userid'] = $UserID;
+            $log['type'] = 1;
+            $log['itemid'] = $id;
+            $log['time'] = time();
+            $log['ip'] = $_SERVER["REMOTE_ADDR"];
+            $logstr = serialize($log);
+            $res = $Logs->setLog($logstr); 
+        } else {
+            //写查看信息log
+            $log_path = base_path().'/storage/logs/data/';
+            $log_file_name = 'check.log';
+            // $log_file_name = date('Ymd', time()) . '.log';
+            $Logs = new \App\Logs($log_path,$log_file_name);
+            $log = array();
+            $log['userid'] = 0;
+            $log['type'] = 1;
+            $log['itemid'] = $id;
+            $log['time'] = time();
+            $log['ip'] = $_SERVER["REMOTE_ADDR"];
+            $logstr = serialize($log);
+            $res = $Logs->setLog($logstr); 
+        }
         return $this->response->array($data);
     }
 
