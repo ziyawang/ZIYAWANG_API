@@ -69,9 +69,15 @@ class NewsController extends BaseController
         if($weight){
             if($NewsLabel){
                 $news = News::where(['Flag'=>1,'NewsLabel'=>$NewsLabel])->lists('NewsID');
+                if($NewsLabel == "hyzx"){
+                    $news = News::where(['Flag'=>1,'NewsLabel'=>'cjzx'])->orWhere(['Flag'=>1,'NewsLabel'=>'hydt'])->lists('NewsID');
+                }
                 $counts = count($news);
                 $pages = ceil($counts/$pagecount);
-                $news = News::skip($skipnum)->take($pagecount)->where(['Flag'=>1,'NewsLabel'=>$NewsLabel])->orderBy('Order','desc')->lists('NewsID');
+                $news = News::skip($skipnum)->take($pagecount)->where(['Flag'=>1,'NewsLabel'=>$NewsLabel])->orderBy('created_at','desc')->lists('NewsID');
+                if($NewsLabel == "hyzx"){
+                    $news = News::skip($skipnum)->take($pagecount)->where(['Flag'=>1,'NewsLabel'=>'cjzx'])->orWhere(['Flag'=>1,'NewsLabel'=>'hydt'])->lists('NewsID');
+                }
             } else {
                 $news = News::where(['Flag'=>1])->lists('NewsID');
                 $counts = count($news);
@@ -86,9 +92,15 @@ class NewsController extends BaseController
                 $news = News::skip($skipnum)->take($pagecount)->where('Flag', 1)->orderBy('created_at','desc')->lists('NewsID');
             } else {
                 $news = News::where(['Flag'=>1,'NewsLabel'=>$NewsLabel])->lists('NewsID');
+                if($NewsLabel == "hyzx"){
+                    $news = News::where(['Flag'=>1,'NewsLabel'=>'cjzx'])->orWhere(['Flag'=>1,'NewsLabel'=>'hydt'])->lists('NewsID');
+                }
                 $counts = count($news);
                 $pages = ceil($counts/$pagecount);
                 $news = News::skip($skipnum)->take($pagecount)->where(['Flag'=>1,'NewsLabel'=>$NewsLabel])->orderBy('created_at','desc')->lists('NewsID');
+                if($NewsLabel == "hyzx"){
+                    $news = News::skip($skipnum)->take($pagecount)->where(['Flag'=>1,'NewsLabel'=>'cjzx'])->orWhere(['Flag'=>1,'NewsLabel'=>'hydt'])->lists('NewsID');
+                }
             }
         }
 

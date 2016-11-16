@@ -134,6 +134,19 @@ $api->get('ie/auth/login', 'App\Http\Controllers\Api\V1\AuthenticateController@a
     //app启动接口    
     $api->post('app/start', 'App\Http\Controllers\Api\V1\ZLLController@appStart');
 
+    //亮亮10.31
+    //新闻评论
+    $api->post('news/comment/create', 'App\Http\Controllers\Api\V1\ZLLController@newsCommentCreate');
+    //新闻评论列表
+    $api->get('news/comment/list', 'App\Http\Controllers\Api\V1\ZLLController@newsCommentList');
+    //新闻评论删除
+    $api->get('news/comment/delete', 'App\Http\Controllers\Api\V1\ZLLController@newsCommnetDelete');
+    //亮亮11.3
+    //获取问卷
+    $api->get('test/paper','App\Http\Controllers\Api\V1\ZLLController@getPaper');
+    //获取结果
+    $api->post('test/result','App\Http\Controllers\Api\V1\ZLLController@getResult');
+
 });
 
 // 私有接口，需要登录

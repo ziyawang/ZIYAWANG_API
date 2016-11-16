@@ -688,13 +688,181 @@ class ZLLController extends BaseController
             $Logs = new \App\Logs($log_path,$log_file_name);
             $log = array();
             $log['userid'] = 0;
-            $log['phonenumber'] = $User['phonenumber'];
+            $log['phonenumber'] = '';
             $log['time'] = time();
             $log['ip'] = $_SERVER["REMOTE_ADDR"];
             $log['channel'] = $payload['Channel'];
             $logstr = serialize($log);
             $res = $Logs->setLog($logstr); 
         }
+    }
+
+    //用户评论接口
+    public function newsCommentCreate(){
+        $payload = app('request')->all();
+        $comment = [];
+        $comment['NewsID'] = $payload['NewsID'];
+        $comment['Content'] = $payload['Content'];
+        $comment['PubTime'] = date('Y-m-d H:i:s',time());
+        $UserID = $this->auth->user() ? $this->auth->user()->toArray()['userid'] : null;
+        if($UserID){
+            $user = User::where('UserID', $UserID)->first();
+            $comment['UserName'] = substr_replace($user->phonenumber,'****',3,4);
+            $comment['UserPicture'] = $user->UserPicture;
+        } else {
+            $comment['UserName'] = '游客评论';
+            $comment['UserPicture'] = '/user/defaltoux.jpg';
+        }
+        $res = DB::table('T_U_NEWSCOMMENT')->insert($comment);
+        if($res){
+            return $this->response->array(['status_code'=>'200', 'msg'=>'评论成功！']);
+        } else {
+            return $this->response->array(['status_code'=>'413', 'msg'=>'评论失败！']);
+        }
+    }
+
+
+    //获取评论列表
+    public function newsCommentList(){
+        $payload = app('request')->all();
+        $startpage = isset($payload['startpage']) ?  $payload['startpage'] : 1;
+        $pagecount = isset($payload['pagecount']) ?  $payload['pagecount'] : 10;
+        $NewsID = $payload['NewsID'];
+        $comments = DB::table('T_U_NEWSCOMMENT')->where(['NewsID'=>$NewsID, 'DeleteFlag'=>0])->lists('CommentID');
+        $counts = count($comments);
+        $pages = ceil($counts/$pagecount);
+        $skipnum = ($startpage-1)*$pagecount;
+        $comments = DB::table('T_U_NEWSCOMMENT')->where(['NewsID'=>$NewsID, 'DeleteFlag'=>0])->orderBy('PubTime', 'desc')->skip($skipnum)->take($pagecount)->lists('CommentID');
+        $data = [];
+        foreach ($comments as $id) {
+            $item = $this->newsCommentInfo($id);   
+            $data[] = $item;
+        }
+        // dd($data);
+        return $this->response->array(['counts'=>$counts, 'pages'=>$pages, 'data'=>$data, 'currentpage'=>$startpage]);
+    }
+
+    //获取评论信息
+    public function newsCommentInfo($id){
+        $comment = DB::table('T_U_NEWSCOMMENT')->select('UserName','UserPicture','Content','PubTime')->where('CommentID',$id)->first();
+        return $comment;
+    }
+
+    //删除评论信息
+    public function newsCommnetDelete(){
+        $payload = app('request')->all();
+        $CommentID = $payload['CommentID'];
+        $res = DB::table('T_U_NEWSCOMMENT')->where('CommentID',$CommentID)->update(['DeleteFlag'=>1]);
+        if($res){
+            return $this->response->array(['status_code'=>'200', 'msg'=>'删除评论成功！']);
+        } else {
+            return $this->response->array(['status_code'=>'414', 'msg'=>'删除评论失败！']);
+        }
+    }
+
+    public function getPaper(){
+        $payload = app('request')->all();
+
+        $Paper = $payload['Paper'];
+        $question = DB::table('T_Q_PAPER')->where('Paper',$Paper)->get();
+        foreach ($question as $v) {
+            $v->Choices = explode(';', $v->Choices);
+            $v->Choicesno = [];
+            foreach ($v->Choices as $choice) {
+                $v->Choicesno[] = mb_substr($choice, 0, -1);
+            }
+            $v->Input = '';
+            if($v->Type == 1){
+                $v->Input = $v->Choices[0];
+                array_shift($v->Choices);
+            }
+        }
+        return $question;
+    }
+
+    public function getResult(){
+        $payload = app('request')->all();
+        $data['UserID'] = $this->auth->user() ? $this->auth->user()->toArray()['userid'] : '';
+        $data['Money'] = $payload['Money'];
+        $data['Area'] = $payload['Area'];
+        $data['AssetType'] = $payload['AssetType'];
+        $data['Type'] = $payload['Type'];
+        $data['Answer'] = $payload['Answer'];
+        $data['Channel'] = @$payload['Channel']?$payload['Channel']:"ANDROID";
+        $data['PhoneNumber'] = @$payload['PhoneNumber']?$payload['PhoneNumber']:"";
+        $data['IP'] = $_SERVER['REMOTE_ADDR'];
+        $data['TestTime'] = date('Y-m-d H:i:s', time());
+        $Answers = json_decode($payload['Answer'],true);
+        // $str = var_export($Answers,$payload['Answer']);
+        // file_put_contents('./json.txt', $str);
+        $name = '';
+        $idnumber = '';
+        $companyname = '';
+        if($data['PhoneNumber'] != ''){
+            if($payload['Type'] == '个人'){
+                $paper = 1;
+                $name = $Answers['2'][0];
+                $idnumber = $Answers['3'][0];
+            } else if($payload['Type'] == '企业'){
+                $paper = 2;
+                $companyname = $Answers['2'][0];
+            }
+        }
+        // $Answers = explode(',', $payload['Answer']);
+        // $names = $Answers[1];
+        // $ids = $Answers[2];
+        $score = 0;
+        foreach ($Answers as $answer) {
+            foreach ($answer as $v) {
+                $tmp = mb_substr($v, -1);
+                if(is_numeric($tmp)){
+                    $score += (int)$tmp;
+                }
+            }
+        }
+        $data['Count'] = count($Answers);
+        $data['Score'] = $score;
+        $data['Name'] = $name;
+        $data['IDNumber'] = $idnumber;
+        $data['CompanyName'] = $companyname;
+        DB::table('T_Q_PERSON')->insert($data);
+
+        if($score < 25){
+            $rand = 1;
+        }elseif($score >= 25 && $score < 40){
+            $rand = 2;
+        }elseif($score > 40){
+            $rand = 3;
+        }
+        $result = DB::table('T_Q_RESULT')->where(['Sort'=>$rand,'Paper'=>$paper])->pluck('Content');
+        return $this->response->array(['status_code' => '200','result' => $result, 'score' => $score]);
+    }
+
+    public function recordTest(){
+        $payload = app('request')->all();
+        $data['UserID'] = $this->auth->user() ? $this->auth->user()->toArray()['userid'] : '';
+        $data['Money'] = $payload['Money'];
+        $data['Area'] = $payload['Area'];
+        $data['AssetType'] = $payload['AssetType'];
+        $data['Type'] = $payload['Type'];
+        $data['Answer'] = $payload['Answer'];
+        $data['Channel'] = "PC";
+        $data['PhoneNumber'] = @$payload['PhoneNumber']?$payload['PhoneNumber']:"";
+        $data['IP'] = $_SERVER['REMOTE_ADDR'];
+        $data['TestTime'] = date('Y-m-d H:i:s', time());
+        $time = date('Y-m-d H:i:s', time()-60*60);
+        $tmp = DB::table('T_Q_PERSON')->where('IP',$data['IP'])->where('TestTime','>',$time)->first();
+        if($tmp){
+            $res = DB::table('T_Q_PERSON')->where('IP',$data['IP'])->where('TestTime','>',$time)->update($data);
+        } else {
+            $res = DB::table('T_Q_PERSON')->insert($data);
+        }
+        if($res){
+            return $this->response->array(['status_code'=>'200']);
+        } else {
+            return $this->response->array(['status_code'=>'444']);
+        }
+
     }
 
 }
