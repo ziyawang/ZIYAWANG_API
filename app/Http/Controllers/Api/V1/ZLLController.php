@@ -829,7 +829,7 @@ class ZLLController extends BaseController
 
         if($score < 25){
             $rand = 1;
-        }elseif($score >= 25 && $score < 40){
+        }elseif($score >= 25 && $score <= 40){
             $rand = 2;
         }elseif($score > 40){
             $rand = 3;
@@ -863,6 +863,32 @@ class ZLLController extends BaseController
             return $this->response->array(['status_code'=>'444']);
         }
 
+    }
+
+    public function entrust(){
+        $payload = app('request')->all();
+        $data['UserID'] = $this->auth->user() ? $this->auth->user()->toArray()['userid'] : '';
+        $data['ConnectPerson'] = $payload['ConnectPerson'];
+        $data['ConnectPhone'] = $payload['ConnectPhone'];
+        $data['TypeID'] = $payload['TypeID'];
+        $data['TypeName'] = DB::table('T_P_PROJECTTYPE')->where('TypeID', $payload['TypeID'])->pluck('TypeName');
+        $data['IP'] = $_SERVER['REMOTE_ADDR'];
+        $data['Channel'] = "PC";
+        $data['EntrustTime'] = date('Y-m-d H:i:s', time());
+        $data['HandleFlag'] = 0;
+        $data['HandleTime'] = 0;
+        $time = date('Y-m-d H:i:s', time()-60*60);
+        $tmp = DB::table('T_Q_PERSON')->where('IP',$data['IP'])->where('TestTime','>',$time)->first();
+        if($tmp){
+            $res = DB::table('T_Q_PERSON')->where('IP',$data['IP'])->where('TestTime','>',$time)->update($data);
+        } else {
+            $res = DB::table('T_Q_PERSON')->insert($data);
+        }
+        if($res){
+            return $this->response->array(['status_code'=>'200']);
+        } else {
+            return $this->response->array(['status_code'=>'444']);
+        }
     }
 
 }
