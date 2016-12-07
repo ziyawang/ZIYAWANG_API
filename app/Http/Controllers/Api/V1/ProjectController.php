@@ -105,7 +105,7 @@ class ProjectController extends BaseController
 
                 $c = new \TopClient;
                 $c->appkey = '23401348';//需要加引号
-                $c->secretKey = 'b192055dbd09af7e7e98539698f67716';
+                $c->secretKey = env('ALIDAYU_APPSECRET');
                 $c->format = 'xml';
                 $req = new \AlibabaAliqinFcSmsNumSendRequest;
                 $req->setExtend("");//暂时不填
@@ -135,18 +135,21 @@ class ProjectController extends BaseController
         $skipnum = ($startpage-1)*$pagecount;
         $TypeID = (isset($payload['TypeID']) && $payload['TypeID'] != 'null' &&  $payload['TypeID'] != '' ) ?  $payload['TypeID'] : null;
         $ProArea = (isset($payload['ProArea']) && $payload['ProArea'] != 'null' && $payload['ProArea'] != '' ) ?  $payload['ProArea'] : null;
-        $Vip = (isset($payload['Vip']) && $payload['Vip'] != 'null' && $payload['Vip'] != '' ) ?  $payload['Vip'] : 'default';
-        if($Vip == 'default' || $Vip == 'null' || $Vip == '') {
-            $Vip = [0,1];
-        } else {
-            $Vip = array($Vip);
-        }
+        // $Vip = (isset($payload['Vip']) && $payload['Vip'] != 'null' && $payload['Vip'] != '' ) ?  $payload['Vip'] : 'default';
+        // if($Vip == 'default' || $Vip == 'null' || $Vip == '') {
+        //     $Vip = [0,1];
+        // } else {
+        //     $Vip = array($Vip);
+        // }
+        $Vip = [0];
 
         $where = app('request')->except('startpage','pagecount','access_token','TypeID', 'ProArea', '_', 'Vip','token');
 
+
+        $Type = [1,6,12];
         if(!$TypeID && !$ProArea) {
-            $projects = Project::skip($skipnum)->take($pagecount)->where('CertifyState',1)->where('PublishState','<>','2')->whereIn('Member',$Vip)->join('T_P_PROJECTTYPE', 'T_P_PROJECTINFO.TypeID', '=', 'T_P_PROJECTTYPE.TypeID')->orderBy('T_P_PROJECTINFO.created_at','desc')->lists('ProjectID');
-            $counts = Project::join('T_P_PROJECTTYPE', 'T_P_PROJECTINFO.TypeID', '=', 'T_P_PROJECTTYPE.TypeID')->where('CertifyState',1)->where('PublishState','<>','2')->whereIn('Member',$Vip)->count();
+            $projects = Project::skip($skipnum)->take($pagecount)->where('CertifyState',1)->where('PublishState','<>','2')->whereIn('Member',$Vip)->whereIn('T_P_PROJECTINFO.TypeID',$Type)->join('T_P_PROJECTTYPE', 'T_P_PROJECTINFO.TypeID', '=', 'T_P_PROJECTTYPE.TypeID')->orderBy('T_P_PROJECTINFO.created_at','desc')->lists('ProjectID');
+            $counts = Project::join('T_P_PROJECTTYPE', 'T_P_PROJECTINFO.TypeID', '=', 'T_P_PROJECTTYPE.TypeID')->where('CertifyState',1)->where('PublishState','<>','2')->whereIn('Member',$Vip)->whereIn('T_P_PROJECTINFO.TypeID',$Type)->count();
             $pages = ceil($counts/$pagecount);
         } elseif ($TypeID && !$ProArea) {
             if(count($where) == 0){
@@ -163,9 +166,9 @@ class ProjectController extends BaseController
                 $pages = ceil($counts/$pagecount);
             }
         } elseif (!$TypeID && $ProArea) {
-            $projects = Project::where('ProArea','like','%'.$ProArea.'%')->where('PublishState','<>','2')->whereIn('Member',$Vip)->where('CertifyState',1)->lists('ProjectID');
+            $projects = Project::where('ProArea','like','%'.$ProArea.'%')->where('PublishState','<>','2')->whereIn('Member',$Vip)->whereIn('T_P_PROJECTINFO.TypeID',$Type)->where('CertifyState',1)->lists('ProjectID');
             $counts = count($projects);
-            $projects = Project::whereIn('ProjectID',$projects)->where('PublishState','<>','2')->whereIn('Member',$Vip)->skip($skipnum)->take($pagecount)->join('T_P_PROJECTTYPE', 'T_P_PROJECTINFO.TypeID', '=', 'T_P_PROJECTTYPE.TypeID')->orderBy('T_P_PROJECTINFO.created_at','desc')->lists('ProjectID');
+            $projects = Project::whereIn('ProjectID',$projects)->where('PublishState','<>','2')->whereIn('Member',$Vip)->whereIn('T_P_PROJECTINFO.TypeID',$Type)->skip($skipnum)->take($pagecount)->join('T_P_PROJECTTYPE', 'T_P_PROJECTINFO.TypeID', '=', 'T_P_PROJECTTYPE.TypeID')->orderBy('T_P_PROJECTINFO.created_at','desc')->lists('ProjectID');
             $pages = ceil($counts/$pagecount);
         } elseif ($TypeID && $ProArea) {
             $projects = Project::where('TypeID',$TypeID)->where('ProArea','like','%'.$ProArea.'%')->where('PublishState','<>','2')->whereIn('Member',$Vip)->where('CertifyState',1)->orderBy('T_P_PROJECTINFO.created_at','desc')->lists('ProjectID');
@@ -191,10 +194,12 @@ class ProjectController extends BaseController
             $item['BuyerNature'] = isset($item['BuyerNature']) ? $item['BuyerNature'] : '';
             $item['Informant'] = isset($item['Informant']) ? $item['Informant'] : '';
             $item['Buyer'] = isset($item['Buyer']) ? $item['Buyer'] : '';
+            $item['ProjectID'] = isset($item['ProjectID']) ? $item['ProjectID'] : '';
             $item['ProjectNumber'] = 'FB' . sprintf("%05d", $item['ProjectID']);
             $item['InvestType'] = isset($item['InvestType']) ? $item['InvestType'] : '';
             $item['Year'] = isset($item['Year']) ? $item['Year'] : '';
             $endTime = time();
+            $item['PublishTime'] = isset($item['PublishTime']) ? $item['PublishTime'] : '';
             $time = strtotime($item['PublishTime']) + 24*60*60;
                 $item['NewFlag'] = 0;
             if($time > $endTime){
@@ -230,9 +235,10 @@ class ProjectController extends BaseController
 
         $where = app('request')->except('startpage','pagecount','access_token','TypeID', 'ProArea', '_', 'Vip','token');
 
+        $Type = [1,6,12];
         if(!$TypeID && !$ProArea) {
-            $projects = Project::skip($skipnum)->take($pagecount)->where('CertifyState',1)->where('PublishState','<>','2')->whereIn('Member',$Vip)->join('T_P_PROJECTTYPE', 'T_P_PROJECTINFO.TypeID', '=', 'T_P_PROJECTTYPE.TypeID')->orderBy('T_P_PROJECTINFO.created_at','desc')->lists('ProjectID');
-            $counts = Project::join('T_P_PROJECTTYPE', 'T_P_PROJECTINFO.TypeID', '=', 'T_P_PROJECTTYPE.TypeID')->where('CertifyState',1)->where('PublishState','<>','2')->whereIn('Member',$Vip)->count();
+            $projects = Project::skip($skipnum)->take($pagecount)->where('CertifyState',1)->where('PublishState','<>','2')->whereIn('Member',$Vip)->whereIn('T_P_PROJECTINFO.TypeID',$Type)->join('T_P_PROJECTTYPE', 'T_P_PROJECTINFO.TypeID', '=', 'T_P_PROJECTTYPE.TypeID')->orderBy('T_P_PROJECTINFO.created_at','desc')->lists('ProjectID');
+            $counts = Project::join('T_P_PROJECTTYPE', 'T_P_PROJECTINFO.TypeID', '=', 'T_P_PROJECTTYPE.TypeID')->where('CertifyState',1)->where('PublishState','<>','2')->whereIn('Member',$Vip)->whereIn('T_P_PROJECTINFO.TypeID',$Type)->count();
             $pages = ceil($counts/$pagecount);
         } elseif ($TypeID && !$ProArea) {
             if(count($where) == 0){
@@ -249,12 +255,12 @@ class ProjectController extends BaseController
                 $pages = ceil($counts/$pagecount);
             }
         } elseif (!$TypeID && $ProArea) {
-            $projects = Project::where('ProArea','like','%'.$ProArea.'%')->where('PublishState','<>','2')->whereIn('Member',$Vip)->where('CertifyState',1)->lists('ProjectID');
+            $projects = Project::where('ProArea','like','%'.$ProArea.'%')->where('PublishState','<>','2')->whereIn('Member',$Vip)->where('CertifyState',1)->whereIn('T_P_PROJECTINFO.TypeID',$Type)->lists('ProjectID');
             $counts = count($projects);
             $projects = Project::whereIn('ProjectID',$projects)->where('PublishState','<>','2')->whereIn('Member',$Vip)->skip($skipnum)->take($pagecount)->join('T_P_PROJECTTYPE', 'T_P_PROJECTINFO.TypeID', '=', 'T_P_PROJECTTYPE.TypeID')->orderBy('T_P_PROJECTINFO.created_at','desc')->lists('ProjectID');
             $pages = ceil($counts/$pagecount);
         } elseif ($TypeID && $ProArea) {
-            $projects = Project::where('TypeID',$TypeID)->where('ProArea','like','%'.$ProArea.'%')->where('PublishState','<>','2')->whereIn('Member',$Vip)->where('CertifyState',1)->orderBy('T_P_PROJECTINFO.created_at','desc')->lists('ProjectID');
+            $projects = Project::where('TypeID',$TypeID)->where('ProArea','like','%'.$ProArea.'%')->where('PublishState','<>','2')->whereIn('Member',$Vip)->whereIn('T_P_PROJECTINFO.TypeID',$Type)->where('CertifyState',1)->orderBy('T_P_PROJECTINFO.created_at','desc')->lists('ProjectID');
             $diffTableName = DB::table('T_P_PROJECTTYPE')->where('TypeID',$TypeID)->pluck('TableName');
             $projects = DB::table("$diffTableName")->whereIn('ProjectID',$projects)->where($where)->lists('ProjectID');
             $counts = count($projects);
@@ -280,6 +286,7 @@ class ProjectController extends BaseController
             $item['ProjectNumber'] = 'FB' . sprintf("%05d", $item['ProjectID']);
             $item['InvestType'] = isset($item['InvestType']) ? $item['InvestType'] : '';
             $item['Year'] = isset($item['Year']) ? $item['Year'] : '';
+            $item['PublishTime'] = isset($item['PublishTime']) ? $item['PublishTime'] : '';
             $endTime = time();
             $time = strtotime($item['PublishTime']) + 24*60*60;
                 $item['NewFlag'] = 0;
@@ -459,13 +466,22 @@ class ProjectController extends BaseController
 
             $project['Account'] = User::where('userid', $UserID)->pluck('Account');
         }
+        $project['CompanyDes'] = isset($project['CompanyDes'])?$project['CompanyDes']:null;
         $project['CompanyDesPC'] = $project['CompanyDes'];
         $project['CompanyDes'] = str_replace('</p>', '', $project['CompanyDes']);
         $project['CompanyDes'] = str_replace('<p>', '', $project['CompanyDes']);
         $project['CompanyDes'] = str_replace('<br />', '', $project['CompanyDes']);
         $project['CompanyDes'] = str_replace('&nbsp;', ' ', $project['CompanyDes']);
 
-
+        if($project['TypeName'] == '固定资产'){
+            $project['TypeName'] = '固产转让';
+        } 
+        if($project['TypeName'] == '资产包'){
+            $project['TypeName'] = '资产包转让';
+        } 
+        if($project['TypeName'] == '融资信息'){
+            $project['TypeName'] = '融资需求';
+        }
 
         return $project;
     }

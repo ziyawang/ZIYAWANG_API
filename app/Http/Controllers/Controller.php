@@ -32,7 +32,7 @@ abstract class Controller extends BaseController
 
         $c = new \TopClient;
         $c->appkey = '23401348';//需要加引号
-        $c->secretKey = 'b192055dbd09af7e7e98539698f67716';
+        $c->secretKey = env('ALIDAYU_APPSECRET');
         $c->format = 'xml';
         $req = new \AlibabaAliqinFcSmsNumSendRequest;
         $req->setExtend("");//暂时不填

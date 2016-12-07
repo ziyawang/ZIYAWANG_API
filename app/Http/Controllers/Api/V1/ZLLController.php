@@ -28,7 +28,7 @@ class ZLLController extends BaseController
         $matchpros = DB::table("$diffTableName")->where('ProjectID', '<>', $payload['ProjectID'])->lists('ProjectID');
         $matchpros = DB::table('T_P_PROJECTINFO')->where('CertifyState',1)->where('PublishState','<>','2')->whereIn('ProjectID',$matchpros)->lists('ProjectID');
 
-        $Project = new ProjectController();
+        $Project = new \App\Http\Controllers\Api\V2\ProjectController();
         shuffle($matchpros);
         $matchpros = array_slice($matchpros, 0, 3);
         $data = [];
@@ -465,9 +465,14 @@ class ZLLController extends BaseController
         $BackNumber = $payload['transaction_no'];
         $money = DB::table('T_U_MONEY')->where('OrderNumber', $OrderNumber)->first();
         if($money){
+            //赠送的钱
+            $add = DB::table('T_CONFIG_RATE')->where('RealMoney',$money->RealMoney)->pluck('add');
             $user = User::where('userid', $money->UserID)->first();
-            $Account = $user->Account + $money->Money;
+            $Account = $user->Account + $money->Money + $add;
             $Operates = '充值' . $money->Money . '芽币';
+            if($add > 0 ){
+                $Operates = '充值' . $money->Money . '芽币，赠送了'.$add.'个芽币';
+            }
             $user->Account = $Account;
             DB::beginTransaction();
             try {
@@ -527,13 +532,18 @@ class ZLLController extends BaseController
         $data['timestamp'] = time();
         $data['IP'] = $_SERVER['REMOTE_ADDR'];
         $data['RealMoney'] = $amount;
+        //赠送的钱
+        $add = DB::table('T_CONFIG_RATE')->where('RealMoney',$amount)->pluck('add');
         $data['Flag'] = 1;
         $data['Channel'] = 'iap';
         $data['Operates'] = '充值' . $data['Money'] . '芽币';
+        if($add > 0 ){
+            $data['Operates'] = '充值' . $data['Money'] . '芽币，赠送了'.$add.'个芽币';
+        }
         $data['Account'] = $user->Account + $amount/10;
         $data['BackNumber'] = $BackNumber;
 
-        $user->Account = $data['Account'];
+        $user->Account = $data['Account'] + $add;
 
         DB::beginTransaction();
         try {
@@ -773,7 +783,7 @@ class ZLLController extends BaseController
             }
             $v->Input = '';
             if($v->Type == 1){
-                $v->Input = $v->Choices[0];
+                $v->Input = mb_substr($v->Choices[0], 0, -1);
                 array_shift($v->Choices);
             }
         }
@@ -873,22 +883,80 @@ class ZLLController extends BaseController
         $data['TypeID'] = $payload['TypeID'];
         $data['TypeName'] = DB::table('T_P_PROJECTTYPE')->where('TypeID', $payload['TypeID'])->pluck('TypeName');
         $data['IP'] = $_SERVER['REMOTE_ADDR'];
-        $data['Channel'] = "PC";
+        $data['Channel'] = @$payload['Channel']?$payload['Channel']:"PC";
         $data['EntrustTime'] = date('Y-m-d H:i:s', time());
         $data['HandleFlag'] = 0;
         $data['HandleTime'] = 0;
         $time = date('Y-m-d H:i:s', time()-60*60);
-        $tmp = DB::table('T_Q_PERSON')->where('IP',$data['IP'])->where('TestTime','>',$time)->first();
+        $tmp = DB::table('T_U_ENTRUST')->where('IP',$data['IP'])->where('EntrustTime','>',$time)->first();
         if($tmp){
-            $res = DB::table('T_Q_PERSON')->where('IP',$data['IP'])->where('TestTime','>',$time)->update($data);
+            $res = DB::table('T_U_ENTRUST')->where('IP',$data['IP'])->where('EntrustTime','>',$time)->update($data);
         } else {
-            $res = DB::table('T_Q_PERSON')->insert($data);
+            $res = DB::table('T_U_ENTRUST')->insert($data);
         }
         if($res){
             return $this->response->array(['status_code'=>'200']);
         } else {
             return $this->response->array(['status_code'=>'444']);
         }
+    }
+
+    public function indexProject(){
+        //6条收费信息
+        $cost1 = Project::where('TypeID',1)->where('CertifyState',1)->where('Member',2)->where('PublishState','<>','2')->orderBy('created_at','desc')->first()->ProjectID;
+        $cost2 = Project::whereIn('TypeID',[6,17])->where('CertifyState',1)->where('Member',2)->where('PublishState','<>','2')->orderBy('created_at','desc')->first()->ProjectID;
+        $cost3 = Project::whereIn('TypeID',[12,16])->where('CertifyState',1)->where('Member',2)->where('PublishState','<>','2')->orderBy('created_at','desc')->first()->ProjectID;
+        $cost4 = Project::where('TypeID',18)->where('CertifyState',1)->where('Member',2)->where('PublishState','<>','2')->orderBy('created_at','desc')->first()->ProjectID;
+        $cost5 = Project::where('TypeID',19)->where('CertifyState',1)->where('Member',2)->where('PublishState','<>','2')->orderBy('created_at','desc')->first()->ProjectID;
+        $cost6 = Project::whereIn('TypeID',[20,21,22])->where('CertifyState',1)->where('Member',2)->where('PublishState','<>','2')->orderBy('created_at','desc')->first()->ProjectID;
+        //6条vip信息
+        $vip1 = Project::where('TypeID',1)->where('CertifyState',1)->where('Member',1)->where('PublishState','<>','2')->orderBy('created_at','desc')->first()->ProjectID;
+        $vip2 = Project::whereIn('TypeID',[6,17])->where('CertifyState',1)->where('Member',1)->where('PublishState','<>','2')->orderBy('created_at','desc')->first()->ProjectID;
+        $vip3 = Project::whereIn('TypeID',[12,16])->where('CertifyState',1)->where('Member',1)->where('PublishState','<>','2')->orderBy('created_at','desc')->first()->ProjectID;
+        $vip4 = Project::where('TypeID',18)->where('CertifyState',1)->where('Member',1)->where('PublishState','<>','2')->orderBy('created_at','desc')->first()->ProjectID;
+        $vip5 = Project::where('TypeID',19)->where('CertifyState',1)->where('Member',1)->where('PublishState','<>','2')->orderBy('created_at','desc')->first()->ProjectID;
+        $vip6 = Project::whereIn('TypeID',[20,21,22])->where('CertifyState',1)->where('Member',1)->where('PublishState','<>','2')->orderBy('created_at','desc')->first()->ProjectID;
+        //1条通告
+        $note = News::where('NewsLabel','czgg')->where('Flag',1)->orderBy('created_at','desc')->first()->NewsID;
+        //1条固产
+        $gc = Project::whereIn('TypeID',[12,16])->where('CertifyState',1)->where('Member',0)->where('PublishState','<>','2')->orderBy('created_at','desc')->first()->ProjectID;
+        //1条融资
+        $rz = Project::whereIn('TypeID',[6,17])->where('CertifyState',1)->where('Member',0)->where('PublishState','<>','2')->orderBy('created_at','desc')->first()->ProjectID;
+        $dataid = [
+            ['ProjectID'=>$cost1,'NewsID'=>''],
+            ['ProjectID'=>$cost2,'NewsID'=>''],
+            ['ProjectID'=>$cost3,'NewsID'=>''],
+            ['ProjectID'=>$cost4,'NewsID'=>''],
+            ['ProjectID'=>$cost5,'NewsID'=>''],
+            ['ProjectID'=>$cost6,'NewsID'=>''],
+            ['ProjectID'=>$vip1,'NewsID'=>''],
+            ['ProjectID'=>$vip2,'NewsID'=>''],
+            ['ProjectID'=>$vip3,'NewsID'=>''],
+            ['ProjectID'=>$vip4,'NewsID'=>''],
+            ['ProjectID'=>$vip5,'NewsID'=>''],
+            ['ProjectID'=>$vip6,'NewsID'=>''],
+            ['ProjectID'=>'','NewsID'=>$note],
+            ['ProjectID'=>$gc,'NewsID'=>''],
+            ['ProjectID'=>$rz,'NewsID'=>''],
+        ];
+        $NEWS = new \App\Http\Controllers\Api\V1\NewsController();
+        $Project = new \App\Http\Controllers\Api\V2\ProjectController();
+        $data = [];
+        foreach ($dataid as $v) {
+            if($v['ProjectID'] != ''){
+                $item = $Project->getInfo($v['ProjectID']);
+                $item['ListType'] = 1;
+                $item = $Project->_makeArr($item);
+                $data[] = $item;
+            } else {
+                $item = $NEWS->getInfo($v['NewsID']);
+                $item['ListType'] = 2;
+                $item['TypeID'] = 99;
+                $item = $Project->_makeArr($item);
+                $data[] = $item;
+            }
+        }
+        return $data;
     }
 
 }

@@ -79,14 +79,73 @@ class NewsController extends BaseController
                     $news = News::skip($skipnum)->take($pagecount)->where(['Flag'=>1,'NewsLabel'=>'cjzx'])->orWhere(['Flag'=>1,'NewsLabel'=>'hydt'])->lists('NewsID');
                 }
             } else {
-                $news = News::where(['Flag'=>1])->lists('NewsID');
+                $news = News::where(['Flag'=>1])->where('NewsLabel','<>','czgg')->where('NewsLabel','<>','zyjt')->where('NewsLabel','<>','hyyj')->lists('NewsID');
+                $counts = count($news);
+                $pages = ceil($counts/$pagecount);
+                $news = News::skip($skipnum)->take($pagecount)->whereIn('NewsID',$news)->orderBy('Order','desc')->lists('NewsID');
+            }
+        } else {
+            if(!$NewsLabel){
+                $news = News::where('Flag', 1)->where('NewsLabel','<>','czgg')->where('NewsLabel','<>','zyjt')->where('NewsLabel','<>','hyyj')->lists('NewsID');
+                $counts = count($news);
+                $pages = ceil($counts/$pagecount);
+                $news = News::skip($skipnum)->take($pagecount)->whereIn('NewsID',$news)->orderBy('created_at','desc')->lists('NewsID');
+            } else {
+                $news = News::where(['Flag'=>1,'NewsLabel'=>$NewsLabel])->lists('NewsID');
+                if($NewsLabel == "hyzx"){
+                    $news = News::where(['Flag'=>1,'NewsLabel'=>'cjzx'])->orWhere(['Flag'=>1,'NewsLabel'=>'hydt'])->lists('NewsID');
+                }
+                $counts = count($news);
+                $pages = ceil($counts/$pagecount);
+                $news = News::skip($skipnum)->take($pagecount)->where(['Flag'=>1,'NewsLabel'=>$NewsLabel])->orderBy('created_at','desc')->lists('NewsID');
+                if($NewsLabel == "hyzx"){
+                    $news = News::skip($skipnum)->take($pagecount)->where(['Flag'=>1,'NewsLabel'=>'cjzx'])->orWhere(['Flag'=>1,'NewsLabel'=>'hydt'])->lists('NewsID');
+                }
+            }
+        }
+
+        $data = [];
+        foreach ($news as $id) {
+            $item = $this->getInfo($id);
+            $data[] = $item;
+        }
+        return $this->response->array(['counts'=>$counts, 'pages'=>$pages, 'data'=>$data, 'currentpage'=>$startpage]);
+    }
+
+    /**
+     * 新闻列表PC
+     *
+     * @param Request $request
+     */
+    public function newsListPC() {
+        $payload = app('request')->all();
+        $startpage = isset($payload['startpage']) ?  $payload['startpage'] : 1;
+        $pagecount = isset($payload['pagecount']) ?  $payload['pagecount'] : 5;
+        $skipnum = ($startpage-1)*$pagecount;
+        $NewsLabel = isset($payload['NewsLabel']) ?  $payload['NewsLabel'] : null;
+        $weight = isset($payload['weight']) ?  $payload['weight'] : null;
+
+        if($weight){
+            if($NewsLabel){
+                $news = News::where(['Flag'=>1,'NewsLabel'=>$NewsLabel])->lists('NewsID');
+                if($NewsLabel == "hyzx"){
+                    $news = News::where(['Flag'=>1,'NewsLabel'=>'cjzx'])->orWhere(['Flag'=>1,'NewsLabel'=>'hydt'])->lists('NewsID');
+                }
+                $counts = count($news);
+                $pages = ceil($counts/$pagecount);
+                $news = News::skip($skipnum)->take($pagecount)->where(['Flag'=>1,'NewsLabel'=>$NewsLabel])->orderBy('created_at','desc')->lists('NewsID');
+                if($NewsLabel == "hyzx"){
+                    $news = News::skip($skipnum)->take($pagecount)->where(['Flag'=>1,'NewsLabel'=>'cjzx'])->orWhere(['Flag'=>1,'NewsLabel'=>'hydt'])->lists('NewsID');
+                }
+            } else {
+                $news = News::where(['Flag'=>1])->where('NewsLabel','<>','czgg')->where('NewsLabel','<>','zyjt')->where('NewsLabel','<>','hyyj')->lists('NewsID');
                 $counts = count($news);
                 $pages = ceil($counts/$pagecount);
                 $news = News::skip($skipnum)->take($pagecount)->where(['Flag'=>1])->orderBy('Order','desc')->lists('NewsID');
             }
         } else {
             if(!$NewsLabel){
-                $news = News::where('Flag', 1)->lists('NewsID');
+                $news = News::where('Flag', 1)->where('NewsLabel','<>','czgg')->where('NewsLabel','<>','zyjt')->where('NewsLabel','<>','hyyj')->lists('NewsID');
                 $counts = count($news);
                 $pages = ceil($counts/$pagecount);
                 $news = News::skip($skipnum)->take($pagecount)->where('Flag', 1)->orderBy('created_at','desc')->lists('NewsID');
