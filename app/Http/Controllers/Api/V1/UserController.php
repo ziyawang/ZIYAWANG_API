@@ -151,6 +151,17 @@ class UserController extends BaseController
              } else {
                 $service['CollectFlag'] = 0;
              }
+                $usrIds=DB::table("T_U_SERVICEINFO")->select("UserID")->where('ServiceID',$id)->get();
+                foreach($usrIds as $value){
+                    $userId=$value->UserID;
+                }
+            $counts=DB::table("T_U_MEMBER")->where("UserID",$userId)->where("PayFlag",1)->where("Over",0)->count();
+             $service['insider']=0;
+             if($counts){
+                $service['insider']=1;
+             }else{
+                  $service['insider']=0;
+             }
 
             //写查看信息log
             $log_path = base_path().'/storage/logs/data/';
@@ -406,12 +417,11 @@ class UserController extends BaseController
         $UserID = $this->auth->user()->toArray()['userid'];
         $where = ['UserID'=>$UserID, 'DeleteFlag'=>0];
 
-        $typearr = [1,6,12,16,17,18,19,20,21,22];
-        $projects = Project::where($where)->where('CertifyState','<>',3)->whereIn('TypeID',$typearr)->lists('ProjectID');
+        $projects = Project::where($where)->where('CertifyState','<>',3)->lists('ProjectID');
         $counts = count($projects);
         $pages = ceil($counts/$pagecount);
 
-        $projects = Project::where($where)->where('CertifyState','<>',3)->whereIn('TypeID',$typearr)->skip($skipnum)->take($pagecount)->orderBy('PublishTime','desc')->lists('ProjectID');
+        $projects = Project::where($where)->where('CertifyState','<>',3)->skip($skipnum)->take($pagecount)->orderBy('PublishTime','desc')->lists('ProjectID');
 
         $data = [];
         foreach ($projects as $pro) {
@@ -623,16 +633,11 @@ class UserController extends BaseController
         $Project = new \App\Http\Controllers\Api\V2\ProjectController();
         $UserID = $this->auth->user()->toArray()['userid'];
         $ServiceID = Service::where('UserID',$UserID)->pluck('ServiceID');
-
-
-        $typearr = [1,6,12,16,17,18,19,20,21,22];
-        $proinarr = Project::whereIn('TypeID',$typearr)->lists('ProjectID');
-
-        $projects = DB::table('T_P_RUSHPROJECT')->where('ServiceID',$ServiceID)->whereIn('ProjectID',$proinarr)->where('CooperateFlag','0')->orderBy('RushTime','desc')->lists('ProjectID');
+        $projects = DB::table('T_P_RUSHPROJECT')->where('ServiceID',$ServiceID)->where('CooperateFlag','0')->orderBy('RushTime','desc')->lists('ProjectID');
         $counts = count($projects);
         $pages = ceil($counts/$pagecount);
 
-        $projects = DB::table('T_P_RUSHPROJECT')->skip($skipnum)->take($pagecount)->whereIn('ProjectID',$proinarr)->where('CooperateFlag','0')->where("ServiceID", $ServiceID)->orderBy('RushTime','desc')->lists('ProjectID');
+        $projects = DB::table('T_P_RUSHPROJECT')->skip($skipnum)->take($pagecount)->where('CooperateFlag','0')->where("ServiceID", $ServiceID)->orderBy('RushTime','desc')->lists('ProjectID');
 
         $data = [];
         foreach ($projects as $pro) {

@@ -14,6 +14,8 @@ use App\User;
 use App\Service;
 use Cache;
 use Tymon\users\Exceptions\JWTException;
+use DB;
+use PDO;
 
 class AuthenticateController extends Controller
 {
@@ -83,7 +85,7 @@ class AuthenticateController extends Controller
             $IM = new IMController();
             $IM->get_rongcloud_token($user->userid);
 
-            return $this->response->array(['status_code' => '200', 'msg' => 'Create User Success', 'token' => $token, 'role' => '0', 'UserID' => $user->userid, 'UserPicture' => $user->UserPicture]);
+            return $this->response->array(['status_code' => '200', 'msg' => 'Create User Success', 'token' => $token, 'role' => '0', 'UserID' => $user->userid, 'UserPicture' => $user->UserPicture, 'right' => $user->right]);
         } else {
             return $this->response->array(['status_code' => '501', 'msg' => 'Create User Error']);
         }
@@ -137,7 +139,7 @@ class AuthenticateController extends Controller
             $role = 1;
             $ServiceName = Service::where('UserID', $user->userid)->pluck('ServiceName');
         }
-
+$this->_upMember($user->userid);
         $role = (string)$role;
         // 发送结果
         if ($res) {
@@ -146,9 +148,9 @@ class AuthenticateController extends Controller
             $IM = new IMController();
             $IM->get_rongcloud_token($user->userid);
             if($role == 1) {
-                return $this->response->array(['status_code' => '200', 'token' => $token, 'role' => $role, 'UserID' => $user->userid, 'UserPicture' => $user->UserPicture, 'ServiceName' => $ServiceName]);
+                return $this->response->array(['status_code' => '200', 'token' => $token, 'role' => $role, 'UserID' => $user->userid, 'UserPicture' => $user->UserPicture, 'ServiceName' => $ServiceName, 'right' => $user->right]);
             } else {
-                return $this->response->array(['status_code' => '200', 'token' => $token, 'role' => $role, 'UserID' => $user->userid, 'UserPicture' => $user->UserPicture]);
+                return $this->response->array(['status_code' => '200', 'token' => $token, 'role' => $role, 'UserID' => $user->userid, 'UserPicture' => $user->UserPicture, 'right' => $user->right]);
             }
         } else {
             return $this->response->array(['status_code' => '504', 'msg' => 'Password Change Error']);
@@ -261,6 +263,7 @@ class AuthenticateController extends Controller
         $logstr = serialize($log);
         $res = $Logs->setLog($logstr); 
 
+$this->_upMember($user->userid);
 
         $hascertify = Service::join('T_P_SERVICECERTIFY', 'T_P_SERVICECERTIFY.ServiceID', '=', 'T_U_SERVICEINFO.ServiceID')->where(['T_U_SERVICEINFO.UserID'=>$user->userid, 'T_P_SERVICECERTIFY.State'=>1])->count();
 
@@ -279,10 +282,10 @@ class AuthenticateController extends Controller
         }
 
         if($role == '1') {
-            return $this->response->array(['status_code' => '200', 'token' => $token, 'role' => $role, 'UserID' => $user->userid, 'UserPicture' => $user->UserPicture, 'ServiceName' => $ServiceName]);
+            return $this->response->array(['status_code' => '200', 'token' => $token, 'role' => $role, 'UserID' => $user->userid, 'UserPicture' => $user->UserPicture, 'ServiceName' => $ServiceName, 'right' => $user->right]);
         } else {
             // all good so return the token
-            return $this->response->array(['status_code' => '200', 'token' => $token, 'role' => $role, 'UserID' => $user->userid, 'UserPicture' => $user->UserPicture]);
+            return $this->response->array(['status_code' => '200', 'token' => $token, 'role' => $role, 'UserID' => $user->userid, 'UserPicture' => $user->UserPicture, 'right' => $user->right]);
         }
     
 
@@ -371,6 +374,26 @@ class AuthenticateController extends Controller
         while (strlen($password) < $len)
             $password .= substr($chars, (mt_rand() % strlen($chars)), 1);
         return $password;
+    }
+
+    //更新会员状态
+    protected function _upMember($userid){
+        DB::table('T_U_MEMBER')->where('EndTime','<',date('Y-m-d H:i:s',time()))->update(['Over'=>1]);
+        DB::setFetchMode(PDO::FETCH_ASSOC);
+        $arr =  DB::table('T_U_MEMBER')->join('T_CONFIG_MEMBER','T_U_MEMBER.MEMBERID','=','T_CONFIG_MEMBER.MEMBERID')->where(['UserID'=>$userid,'Over'=>0,'PayFlag'=>1])->select('EndTime','TypeID','MemberName')->orderBy('MemPayID','desc')->get();
+        DB::setFetchMode(PDO::FETCH_CLASS);
+        $rightarr = [];
+        $showrightarr = [];
+        foreach ($arr as $a) {
+            $tmp = explode(',', $a['TypeID']);
+            $rightarr = array_merge($rightarr, $tmp);
+            if(!isset($showrightarr[$a['MemberName']])){
+                $showrightarr[$a['MemberName']] = $a['EndTime'];                 
+            }
+        }
+        $right = implode(',', array_unique($rightarr));
+        $showright = json_encode($showrightarr);
+        DB::table('users')->where('userid',$userid)->update(['right'=>$right,'showright'=>$showright]);
     }
 
 }

@@ -110,23 +110,28 @@ class LdsController extends  BaseController{
 	//
 	 public function enroll(){
 	        $payload = app('request')->all();
-	        $str = "姓名：" . $payload['name'] . "\n";
-	        $str = $str . "性别：" . $payload['sex'] . "\n";
-	        if(isset($payload['year'])){
-	        	 $str = $str . "生日：" . $payload['year']."-".$payload['month']."-".$payload['day']. "\n";
-	        }
-	         $str = $str . "手机：" . $payload['phonenumber'] . "\n";
-		$str = $str . "微信：" . $payload['wechat'] . "\n";
-		$str = $str . "邮箱：" . (isset($payload['email'])?$payload['email']:'') . "\n";
-		$str = $str . "居住地：" . (isset($payload['live'])?$payload['live']:'') . "\n";
-		$str = $str . "工作单位：" . $payload['work'] . "\n";
-		$str = $str . "培训目标：" . (isset($payload['goal'])?$payload['goal']:'') . "\n";
-		$str = $str . "工作经历：" . (isset($payload['task'])?$payload['task']:'') . "\n";
-		$str = $str . "报名时间：" . date('Y-m-d H:i:s', time()) . "\n";
-		$str = $str . "用户IP：" . $_SERVER["REMOTE_ADDR"] . "\n\n\n";
+		 if(!empty($payload['name']) && $payload['phonenumber'] && $payload['wechat'] && $payload['email'] && $payload['work']){
+			 $str = "姓名：" . $payload['name'] . "\n";
+			 $str = $str . "性别：" .(isset($payload['sex'])?$payload['sex']:'男') . "\n";
+			 if(isset($payload['year'])){
+				 $str = $str . "生日：" . $payload['year']."-".$payload['month']."-".$payload['day']. "\n";
+			 }
+			 $str = $str . "手机：" . $payload['phonenumber'] . "\n";
+			 $str = $str . "微信：" . $payload['wechat'] . "\n";
+			 $str = $str . "邮箱：" . (isset($payload['email'])?$payload['email']:'') . "\n";
+			 $str = $str . "居住地：" . (isset($payload['live'])?$payload['live']:'') . "\n";
+			 $str = $str . "工作单位：" . $payload['work'] . "\n";
+			 $str = $str . "培训目标：" . (isset($payload['goal'])?$payload['goal']:'') . "\n";
+			 $str = $str . "工作经历：" . (isset($payload['task'])?$payload['task']:'') . "\n";
+			 $str = $str . "报名时间：" . date('Y-m-d H:i:s', time()) . "\n";
+			 $str = $str . "用户IP：" . $_SERVER["REMOTE_ADDR"] . "\n\n\n";
 
-	        file_put_contents('./lists.txt', $str, FILE_APPEND);
-	        return $this->response->array(['status_code'=>'200', 'msg'=>'恭喜您报名成功！工作人员近期会联系您，确认报名信息，请保持电话畅通！']);
+			 file_put_contents('./lists.txt', $str, FILE_APPEND);
+			 return $this->response->array(['status_code'=>'200', 'msg'=>'恭喜您报名成功！工作人员近期会联系您，确认报名信息，请保持电话畅通！']);
+		 }else{
+			 return $this->response->array(['status_code'=>'604', 'msg'=>"请您将信息填写完整"]);
+		 }
+
     }
 
 }

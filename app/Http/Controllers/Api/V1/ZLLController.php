@@ -262,10 +262,11 @@ class ZLLController extends BaseController
             );
 
             //整理插入数据
+            $add = DB::table('T_CONFIG_RATE')->where('RealMoney',$amount)->pluck('add');
             $data = array();
             $data['UserID'] = $user->userid;
             $data['Type'] = 1;
-            $data['Money'] = intval($amount)/10;
+            $data['Money'] = intval($amount)/10 + $add;
             $data['OrderNumber'] = $orderNo;
             // $data['Account'] = $user->Account + floatval($amount);
             $data['created_at'] = date('Y-m-d H:i:s',time());
@@ -460,18 +461,78 @@ class ZLLController extends BaseController
 
     public function webhooks() {
         $payload = app('request')->all()['data']['object'];
+        $metadata = $payload['metadata'];
         $OrderNumber = $payload['order_no'];
         $Channel = $payload['channel'];
         $BackNumber = $payload['transaction_no'];
+        if(count($metadata) > 0 ){
+            $user = User::where('userid', $metadata['userid'])->first();
+            if($metadata['paytype'] == 'member'){
+                // 先查有没有同类型会员
+                $member = DB::table('T_CONFIG_MEMBER')->where('MemberID',$metadata['payid'])->first();
+                $MemberName = DB::table('T_CONFIG_MEMBER')->where('MemberID',$metadata['payid'])->pluck('MemberName');
+                $MemberYB = DB::table('T_CONFIG_MEMBER')->where('MemberID',$metadata['payid'])->pluck('YB');
+                $tmp = DB::table('T_U_MEMBER')->where(['PayName'=>$payload['payname'],'UserID'=>$user->userid])->where('Over','<>',1)->orderBy('EndTime','desc')->first();
+                if($tmp){
+                    //判断,到期就不管，如果没到期
+                    if(strtotime($tmp->EndTime) > time()){
+                        $StartTime = $tmp->EndTime;
+                    } else {
+                        $StartTime = date('Y-m-d H:i:s',time());
+                    }
+                } else {
+                    $StartTime = date('Y-m-d H:i:s',time());
+                }
+                $EndTime = date('Y-m-d H:i:s',strtotime("+$metadata[month] months", strtotime($StartTime)));
+
+                if($MemberYB > 0){
+                    //赠送芽币
+                    //整理插入数据
+                    $data = array();
+                    $data['UserID'] = $user->userid;
+                    $data['Type'] = 1;
+                    $data['Money'] = $member->YB;
+                    $data['OrderNumber'] = 'ZS' . substr(time(),4) . mt_rand(1000,9999);
+                    $data['Account'] = $user->Account + $MemberYB;
+                    $data['Flag'] = 1;
+                    $data['created_at'] = date('Y-m-d H:i:s',time());
+                    $data['IP'] = $tmp->IP;
+                    $data['timestamp'] = time();
+                    $data['Operates'] = "开通" . $member->Content . "，赠送" . $MemberYB . "个芽币";
+
+                    DB::beginTransaction();
+                    try {
+                        DB::table("T_U_MONEY")->insert($data);
+                        $user->Account = $user->Account + $MemberYB;
+                        $user->save();
+                        DB::table('T_U_MEMBER')->where('OrderNumber', $OrderNumber)->update(['PayFlag'=>1,'BackNumber'=>$BackNumber, 'Channel'=>$Channel, 'StartTime'=>$StartTime, 'EndTime'=>$EndTime, 'Over'=>0]);
+
+                        DB::commit();
+                    } catch (Exception $e){
+                        DB::rollback();
+                        throw $e;
+                    }
+                    if(!isset($e)){
+                        return 'ok';
+                    }
+                }
+
+                DB::table('T_U_MEMBER')->where('OrderNumber', $OrderNumber)->update(['PayFlag'=>1,'BackNumber'=>$BackNumber, 'Channel'=>$Channel, 'StartTime'=>$StartTime, 'EndTime'=>$EndTime]);
+                return "ok";
+            }
+            if($metadata['paytype'] == 'star'){
+               
+            }
+        }
         $money = DB::table('T_U_MONEY')->where('OrderNumber', $OrderNumber)->first();
         if($money){
             //赠送的钱
             $add = DB::table('T_CONFIG_RATE')->where('RealMoney',$money->RealMoney)->pluck('add');
             $user = User::where('userid', $money->UserID)->first();
-            $Account = $user->Account + $money->Money + $add;
+            $Account = $user->Account + $money->Money;
             $Operates = '充值' . $money->Money . '芽币';
             if($add > 0 ){
-                $Operates = '充值' . $money->Money . '芽币，赠送了'.$add.'个芽币';
+                $Operates = '充值' . ($money->Money-$add) . '芽币，赠送了'.$add.'个芽币';
             }
             $user->Account = $Account;
             DB::beginTransaction();
@@ -485,8 +546,6 @@ class ZLLController extends BaseController
                 throw $e;
             }
         }
-        // $str = serialize($payload);
-        // file_put_contents('./test.txt', $str);
         if(!isset($e)){
             return 'ok';
         }
@@ -525,7 +584,6 @@ class ZLLController extends BaseController
         $data = array();
         $data['UserID'] = $user->userid;
         $data['Type'] = 1;
-        $data['Money'] = intval($amount)/10;
         $data['OrderNumber'] = $orderNo;
         // $data['Account'] = $user->Account + floatval($amount);
         $data['created_at'] = date('Y-m-d H:i:s',time());
@@ -534,16 +592,17 @@ class ZLLController extends BaseController
         $data['RealMoney'] = $amount;
         //赠送的钱
         $add = DB::table('T_CONFIG_RATE')->where('RealMoney',$amount)->pluck('add');
+        $data['Money'] = intval($amount)/10 + $add;
         $data['Flag'] = 1;
         $data['Channel'] = 'iap';
         $data['Operates'] = '充值' . $data['Money'] . '芽币';
         if($add > 0 ){
-            $data['Operates'] = '充值' . $data['Money'] . '芽币，赠送了'.$add.'个芽币';
+            $data['Operates'] = '充值' . ($data['Money']-$add) . '芽币，赠送了'.$add.'个芽币';
         }
-        $data['Account'] = $user->Account + $amount/10;
+        $data['Account'] = $user->Account + $amount/10 + $add;
         $data['BackNumber'] = $BackNumber;
 
-        $user->Account = $data['Account'] + $add;
+        $user->Account = $data['Account'];
 
         DB::beginTransaction();
         try {
@@ -957,6 +1016,15 @@ class ZLLController extends BaseController
             }
         }
         return $data;
+    }
+
+    public function tempSms(){
+        ini_set('max_execution_time', '0');
+        $mobiles = User::lists('phonenumber');
+        foreach ($mobiles as $v) {
+            $this->_allSendSms($v, "SMS_33695796");
+        }
+        return "ok";
     }
 
 }

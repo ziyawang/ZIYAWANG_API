@@ -21,7 +21,6 @@ Route::get('/', function () {
 Route::any('pay/result','Api\V1\ZLLController@payResult');
 //webhooks回调地址
 Route::any('pay/webhooks','Api\V1\ZLLController@webhooks');
-//临时录题
 
 // API 路由接管
 $api = app('api.router');
@@ -156,6 +155,15 @@ $api->get('/v2/ie/auth/login', 'App\Http\Controllers\Api\V1\AuthenticateControll
     $api->post('/v2/project/create','App\Http\Controllers\Api\V2\ProjectController@create');
 
 $api->post('temp/addquestion','App\Http\Controllers\Api\V2\TempController@addQuestion');
+
+
+//12.12 临时群发短信
+    $api->get('/v2/temp/sendsms', 'App\Http\Controllers\Api\V1\ZLLController@tempSms');
+
+    //12.13会员开通列表，服务方认证列表
+    $api->get('/v2/member/list','App\Http\Controllers\Api\V2\MemberController@memberList');
+    $api->get('/v2/star/list','App\Http\Controllers\Api\V2\MemberController@starList');
+
 });
 
 // 私有接口，需要登录
@@ -168,7 +176,7 @@ $api->version('v1', ['protected' => true, 'middleware'=>['access','cross']], fun
     // 修改用户头像
     $api->post('/v2/auth/chpicture', 'App\Http\Controllers\Api\V1\UserController@chpicture');
     // 获取当前用户信息
-    $api->post('/v2/auth/me', 'App\Http\Controllers\Api\V1\UserController@me');
+    $api->post('/v2/auth/me', 'App\Http\Controllers\Api\V2\UserController@me');
     // 重置用户密码
     $api->post('/v2/auth/chpwd', 'App\Http\Controllers\Api\V1\UserController@changePassword');
     // 服务方信息完善
@@ -244,7 +252,7 @@ $api->version('v1', ['protected' => true, 'middleware'=>['access','cross']], fun
     //app查看联系方式消费接口
     $api->post('/v2/app/consume','App\Http\Controllers\Api\V1\ZLLController@appConsume');
     //账单
-    $api->post('/v2//mybill','App\Http\Controllers\Api\V1\ZLLController@mybill');
+    $api->post('/v2/mybill','App\Http\Controllers\Api\V1\ZLLController@mybill');
     //亮亮9.20
     //ping++支付接口
     $api->post('/v2/pay','App\Http\Controllers\Api\V1\ZLLController@payMoney');
@@ -260,6 +268,14 @@ $api->version('v1', ['protected' => true, 'middleware'=>['access','cross']], fun
     //亮亮11.28
     //委托发布接口
     $api->post('/v2/entrust','App\Http\Controllers\Api\V1\ZLLController@entrust');
+
+    //亮亮12.13
+    //会员付费，服务方认证付费接口
+    $api->post('/v2/pay','App\Http\Controllers\Api\V2\MemberController@payMoney');
+    //会员开通记录
+    $api->post('/v2/pay/member/list','App\Http\Controllers\Api\V2\MemberController@mybill');
+    //苹果支付成功回调接口
+    $api->post('/v2/apple/pay','App\Http\Controllers\Api\V2\MemberController@applePay');
 
 });
 
@@ -439,7 +455,7 @@ $api->version('v1', ['protected' => true, 'middleware'=>['access','cross']], fun
 
 
      //app上传文件 山
-    $api->post('uploadfile', 'App\Http\Controllers\Api\V2\ProjectController@uploadFile');
+    $api->post('uploadfile', 'App\Http\Controllers\Api\V1\ProjectController@uploadFile');
 
     // 项目抢单
     $api->post('project/rush', 'App\Http\Controllers\Api\V1\ProjectController@proRush');
