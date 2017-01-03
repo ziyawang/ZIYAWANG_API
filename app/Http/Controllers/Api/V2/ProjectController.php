@@ -295,10 +295,11 @@ class ProjectController extends BaseController
         $TypeID = (isset($payload['TypeID']) && $payload['TypeID'] != 'null' &&  $payload['TypeID'] != '' &&  $payload['TypeID'] != 'undefined') ?  $payload['TypeID'] : null;
         $ProArea = (isset($payload['ProArea']) && $payload['ProArea'] != 'null' && $payload['ProArea'] != '' ) ?  $payload['ProArea'] : null;
         $Vip = (isset($payload['Vip']) && $payload['Vip'] != 'null' && $payload['Vip'] != '' ) ?  $payload['Vip'] : 'default';
+        $Type = [1,6,12,16,17,18,19,20,21,22];
         //如果没有选择信息类型、级别、地区
         if(!$TypeID && !$ProArea && $Vip == 'default'){
             $data = $this->mass($startpage,$pagecount,$skipnum);
-            $counts = Project::where('CertifyState',1)->where('PublishState','<>',1)->count();
+            $counts = Project::where('CertifyState',1)->whereIn('T_P_PROJECTINFO.TypeID', $Type)->where('PublishState','<>',1)->count();
             $counts += News::where('NewsLabel','ccgg')->where('Flag',1)->count();
             $pages = ceil($counts/$pagecount);
             return $this->response->array(['counts'=>$counts, 'pages'=>$pages, 'data'=>$data, 'currentpage'=>$startpage]);
@@ -310,14 +311,13 @@ class ProjectController extends BaseController
             $Vip = array($Vip);
         }
 
-        $Type = [1,6,12,16,17,18,19,20,21,22];
 
         //如果typeid为18，19 企业商帐个人债权
         if($TypeID == '18' || $TypeID == '19'){
             if(isset($payload['Law']) && $payload['Law'] == '1'){
                 $projects = Project:: where('PublishState','<>',1)->whereIn('Member',$Vip)->where('T_P_PROJECTINFO.TypeID', $TypeID)->where('CertifyState',1)->lists('ProjectID');
                 if($ProArea){
-                    $projects = Project::where('ProArea','like','%'.$ProArea.'%')->where('PublishState','<>',1)->whereIn('Member',$Vip)->where('T_P_PROJECTINFO.TypeID', $Type)->where('CertifyState',1)->lists('ProjectID');
+                    $projects = Project::where('ProArea','like','%'.$ProArea.'%')->where('PublishState','<>',1)->whereIn('Member',$Vip)->whereIn('T_P_PROJECTINFO.TypeID', $Type)->where('CertifyState',1)->lists('ProjectID');
                 }
                 $diffTableName = DB::table('T_P_PROJECTTYPE')->where('TypeID',$TypeID)->pluck('TableName');
                 $projects = DB::table("$diffTableName")->whereIn('ProjectID',$projects)->where('Law','<>','')->lists('ProjectID');
@@ -343,7 +343,7 @@ class ProjectController extends BaseController
             } elseif(isset($payload['UnLaw']) && $payload['UnLaw'] == '1'){
                 $projects = Project:: where('PublishState','<>',1)->whereIn('Member',$Vip)->where('T_P_PROJECTINFO.TypeID', $TypeID)->where('CertifyState',1)->lists('ProjectID');
                 if($ProArea){
-                    $projects = Project::where('ProArea','like','%'.$ProArea.'%')->where('PublishState','<>',1)->whereIn('Member',$Vip)->where('T_P_PROJECTINFO.TypeID', $Type)->where('CertifyState',1)->lists('ProjectID');
+                    $projects = Project::where('ProArea','like','%'.$ProArea.'%')->where('PublishState','<>',1)->whereIn('Member',$Vip)->whereIn('T_P_PROJECTINFO.TypeID', $Type)->where('CertifyState',1)->lists('ProjectID');
                 }
                 $diffTableName = DB::table('T_P_PROJECTTYPE')->where('TypeID',$TypeID)->pluck('TableName');
                 $projects = DB::table("$diffTableName")->whereIn('ProjectID',$projects)->where('UnLaw','<>','')->lists('ProjectID');

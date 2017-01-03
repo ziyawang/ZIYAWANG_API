@@ -65,12 +65,40 @@ class MemberController extends BaseController
                 if($star->StarName != $payload['payname']){
                     return $this->response->array(['status_code'=>'456','msg'=>'参数有误！']);
                 }
-                $amount = $star->StarPrice;
+                //先查是否已经有缴费成功的记录
+                $tmp = DB::table('T_U_STAR')->where(['UserID'=>$user->userid,'StarID'=>$payload['payid'],'State'=>1])->orWhere(['UserID'=>$user->userid,'StarID'=>$payload['payid'],'State'=>2])->count();
+                if($tmp > 0){
+                    return $this->response->array(['status_code'=>'577', 'msg'=>'您已经支付过了！']);
+                }
+                //如果是重新上传
+                $tmp = DB::table('T_U_STAR')->where(['UserID'=>$user->userid,'StarID'=>$payload['payid'],'State'=>3])->count();
+                if($tmp > 0){
+                    DB::table('T_U_STAR')->where(['UserID'=>$user->userid,'StarID'=>$payload['payid'],'State'=>3])->update(['State'=>1,'created_at'=>date('Y-m-d H:i:s',time())]);
+                    return $this->response->array(['status_code'=>'200', 'msg'=>'上传成功！']);
+                }
+
+                $amount = $star->Price;
                 $orderNo = 'RZ' . substr(time(),4) . mt_rand(1000,9999);
                 $subject = isset($payload['subject']) ? $payload['subject']:'认证星级，类型：'.$star->StarName;
                 $body = '服务方星级认证';
-                $url = "http://ziyawang.com/ucenter/service";
+                $url = "http://ziyawang.com/ucenter/star";
                 $metadata = ['paytype'=>'star','payid'=>$payload['payid'],'userid'=>$user->userid];
+//如果payid=4或者5的时候
+                if($payload['payid'] == 4 || $payload['payid'] == 5){
+                    //整理插入数据
+                    $freearr['StarID'] = $payload['payid'];
+                    $freearr['PayName'] = $payload['payname'];
+                    $freearr['PayMoney'] = 0;
+                    $freearr['UserID'] = $user->userid;
+                    $freearr['ServiceID'] = Service::where('UserID',$user->userid)->pluck('ServiceID');
+                    $freearr['IP'] = $_SERVER['REMOTE_ADDR'];
+                    $freearr['created_at'] = date('Y-m-d H:i:s',time());
+                    $freearr['OrderNumber'] = $orderNo;
+                    $freearr['State'] = 1;
+                    $freearr['Resource'] = trim($payload['Resource'],',');
+                    DB::table("T_U_STAR")->insert($freearr);
+                    return $this->response->array(['status_code'=>'200', 'msg'=>'上传成功！']);
+                }
             }
         } else {
             $amount = $payload['amount'];
@@ -167,8 +195,8 @@ class MemberController extends BaseController
 
             //整理插入数据
             if(isset($payload['paytype'])){
-                $member = DB::table('T_CONFIG_MEMBER')->where('MemberID',$payload['payid'])->first();
                 if($payload['paytype'] == 'member'){
+                    $member = DB::table('T_CONFIG_MEMBER')->where('MemberID',$payload['payid'])->first();
                     $data = array();
                     // 会员开通记录
                     $data['UserID'] = $user->userid;
@@ -183,7 +211,19 @@ class MemberController extends BaseController
                     DB::table("T_U_MEMBER")->insert($data);
                 }
                 if($payload['paytype'] == 'star'){
-                   
+                    $star = DB::table('T_CONFIG_STAR')->where('StarID',$payload['payid'])->first();
+                    $data = array();
+                    // 星级开通
+                    $data['StarID'] = $payload['payid'];
+                    $data['PayName'] = $payload['payname'];
+                    $data['PayMoney'] = $star->Price;
+                    $data['UserID'] = $user->userid;
+                    $data['ServiceID'] = Service::where('UserID',$user->userid)->pluck('ServiceID');
+                    $data['OrderNumber'] = $orderNo;
+                    $data['created_at'] = date('Y-m-d H:i:s',time());
+                    $data['IP'] = $_SERVER['REMOTE_ADDR'];
+                    $data['State'] = 0;
+                    DB::table("T_U_STAR")->insert($data);
                 }
             } else {
                 $add = DB::table('T_CONFIG_RATE')->where('RealMoney',$amount)->pluck('add');
@@ -286,7 +326,27 @@ class MemberController extends BaseController
                 return "ok";
             }
             if($payload['paytype'] == 'star'){
-                //服务方认证交钱
+                //先查是否已经有缴费成功的记录
+                $tmp = DB::table('T_U_STAR')->where(['UserID'=>$user->userid,'StarID'=>$payload['payid'],'State'=>1])->orWhere(['UserID'=>$user->userid,'StarID'=>$payload['payid'],'State'=>2])->count();
+                if($tmp > 0){
+                    return $this->response->array(['status_code'=>'577', 'msg'=>'您已经支付过了！']);
+                }
+                $star = DB::table('T_CONFIG_STAR')->where('StarID',$payload['payid'])->first();
+                $arr = array();
+                // 星级开通
+                $arr['StarID'] = $payload['payid'];
+                $arr['PayName'] = $payload['payname'];
+                $arr['PayMoney'] = $star->Price;
+                $arr['UserID'] = $user->userid;
+                $arr['ServiceID'] = Service::where('UserID',$user->userid)->pluck('ServiceID');
+                $arr['OrderNumber'] = 'RZ' . substr(time(),4) . mt_rand(1000,9999);
+                $arr['created_at'] = date('Y-m-d H:i:s',time());
+                $arr['IP'] = $_SERVER['REMOTE_ADDR'];
+                $arr['BackNumber'] = $payload['backnumber'];
+                $arr['Channel'] = 'iap';
+                $arr['State'] = 1;
+                DB::table("T_U_STAR")->insert($arr);
+                return 'ok';
             }
         } else {
             $amount = $payload['amount'];

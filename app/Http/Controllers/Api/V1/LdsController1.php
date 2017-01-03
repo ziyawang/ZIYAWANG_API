@@ -107,85 +107,31 @@ class LdsController extends  BaseController{
 	          return $this->response->array(['counts'=>$counts, 'pages'=>$pages, 'data'=>$matchers, 'currentpage'=>$startpage]);
 	}
 
-//app服务方星级认证
-	public function star(){
-	$payload = app('request')->all();
-        	$StarID= $payload['StarID'];
-        	$PayName =$payload['PayName'];
-        	 $UserID = $this->auth->user()->toArray()['userid'];
-        	$ServiceIDs=DB::table("T_U_SERVICEINFO")->select("ServiceID")->where("UserID",$UserID)->get();
-        	foreach ($ServiceIDs as $value) {
-        		$serviceId=$value->ServiceID;
-        	}
-        	$ServiceID=$serviceId;
-        	$image_path=dirname(base_path()).'/ziyaupload/images/user/';
-        	if(!is_dir($image_path)){  
-                 mkdir($image_path,0777,true);  
-        	}  
-        	$imgArray=array();
-        	if(!empty($_FILES)){
-	        	foreach($_FILES as  $key=>$file){
-	            if(isset($_FILES[$key])){
-	                $baseName=basename($file['name']);
-	                $extension=strrchr($baseName, ".");
-	                $newName=time() . mt_rand(1000, 9999).$extension;
-		      $target_path = $image_path . $newName;  
-	                 $filePath="/user/".$newName;
-	              if(move_uploaded_file($_FILES[$key]["tmp_name"],$target_path)){
-	                    $imgArray[$key]=$filePath;
-	                }else{
-	                    return $this->response->array(['status_code' => '480','msg'=>"文件上传失败"]);
-	                } 
-	            }
-	        }
-        	}
-        	
-        if($imgArray){
-        	$Resource=implode(",",$imgArray);
-        }else{
-        	$Resource="";
-        }
-        $counts=DB::table("T_U_STAR")->where("StarID",$StarID)->where("UserID",$UserID)->count();
-        if($counts){
-	        	 $result=DB::table("T_U_STAR")->where("StarID",$StarID)->where("UserID",$UserID)->update([
-	        		"StarID"=>$StarID,
-	        		"PayName"=>$PayName,
-	        		"PayMoney"=>"",
-	        		"UserID"=>$UserID,
-	        		"ServiceID"=>$ServiceID,
-	        		"Channel"=>"",
-	        		"BackNumber"=>"",
-	        		"IP"=>$_SERVER['REMOTE_ADDR'],
-	        		 'created_at' =>date("Y-m-d H:i:s", time()),
-	        		"OrderNumber"=> 'KT' . substr(time(),4) . mt_rand(1000,9999);
-,
-	        		"State"=>1,
-	        		"Resource"=>$Resource,
-		]);
-        	}else{
-        // 将数据插入数据库
-	        $result=DB::table("T_U_STAR")->insert([
-	        		"StarID"=>$StarID,
-	        		"PayName"=>$PayName,
-	        		"PayMoney"=>"",
-	        		"UserID"=>$UserID,
-	        		"ServiceID"=>$ServiceID,
-	        		"Channel"=>"",
-	        		"BackNumber"=>"",
-	        		"IP"=>$_SERVER['REMOTE_ADDR'],
-	        		 'created_at' =>date("Y-m-d H:i:s", time()),
-	        		"OrderNumber"=>'KT' . substr(time(),4) . mt_rand(1000,9999);
-,
-	        		"State"=>1,
-	        		"Resource"=>$Resource,
-		]);
-        	}
- // 创建项目成功
-        if ($result) {
-            return $this->response->array(['status_code'=>'200','success' => 'Create Pro Success']);
-        } else {
-            return $this->response->array(['status_code'=>'499','error' => 'Create Pro Error']);
-        }    
-	}
+	//
+	 public function enroll(){
+	        $payload = app('request')->all();
+		 if(!empty($payload['name']) && $payload['phonenumber'] && $payload['wechat'] && $payload['email'] && $payload['work']){
+			 $str = "姓名：" . $payload['name'] . "\n";
+			 $str = $str . "性别：" .(isset($payload['sex'])?$payload['sex']:'男') . "\n";
+			 if(isset($payload['year'])){
+				 $str = $str . "生日：" . $payload['year']."-".$payload['month']."-".$payload['day']. "\n";
+			 }
+			 $str = $str . "手机：" . $payload['phonenumber'] . "\n";
+			 $str = $str . "微信：" . $payload['wechat'] . "\n";
+			 $str = $str . "邮箱：" . (isset($payload['email'])?$payload['email']:'') . "\n";
+			 $str = $str . "居住地：" . (isset($payload['live'])?$payload['live']:'') . "\n";
+			 $str = $str . "工作单位：" . $payload['work'] . "\n";
+			 $str = $str . "培训目标：" . (isset($payload['goal'])?$payload['goal']:'') . "\n";
+			 $str = $str . "工作经历：" . (isset($payload['task'])?$payload['task']:'') . "\n";
+			 $str = $str . "报名时间：" . date('Y-m-d H:i:s', time()) . "\n";
+			 $str = $str . "用户IP：" . $_SERVER["REMOTE_ADDR"] . "\n\n\n";
+
+			 file_put_contents('./lists.txt', $str, FILE_APPEND);
+			 return $this->response->array(['status_code'=>'200', 'msg'=>'恭喜您报名成功！工作人员近期会联系您，确认报名信息，请保持电话畅通！']);
+		 }else{
+			 return $this->response->array(['status_code'=>'604', 'msg'=>"请您将信息填写完整"]);
+		 }
+
+    }
 
 }

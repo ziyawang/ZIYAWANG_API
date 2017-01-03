@@ -50,9 +50,9 @@ $api->get('/v2/ie/auth/login', 'App\Http\Controllers\Api\V1\AuthenticateControll
     // 生成图形验证码
     
     // 服务方列表
-    $api->get('/v2/service/list', 'App\Http\Controllers\Api\V1\UserController@serList');
+    $api->get('/v2/service/list', 'App\Http\Controllers\Api\V2\UserController@serList');
     // 服务方详情
-    $api->get('/v2/service/list/{id}', 'App\Http\Controllers\Api\V1\UserController@serInfo');
+    $api->get('/v2/service/list/{id}', 'App\Http\Controllers\Api\V2\UserController@serInfo');
 
     //【项目】
     // 项目列表
@@ -277,6 +277,9 @@ $api->version('v1', ['protected' => true, 'middleware'=>['access','cross']], fun
     //苹果支付成功回调接口
     $api->post('/v2/apple/pay','App\Http\Controllers\Api\V2\MemberController@applePay');
 
+    //12.26服务方认证上传图片
+    $api->post('/v2/lds/star', 'App\Http\Controllers\Api\V1\LdsController@star');
+
 });
 
 // END V2 版本
@@ -455,7 +458,7 @@ $api->version('v1', ['protected' => true, 'middleware'=>['access','cross']], fun
 
 
      //app上传文件 山
-    $api->post('uploadfile', 'App\Http\Controllers\Api\V1\ProjectController@uploadFile');
+    $api->post('uploadfile', 'App\Http\Controllers\Api\V2\ProjectController@uploadFile');
 
     // 项目抢单
     $api->post('project/rush', 'App\Http\Controllers\Api\V1\ProjectController@proRush');

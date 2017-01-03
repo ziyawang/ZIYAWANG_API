@@ -76,7 +76,7 @@ class NewsController extends BaseController
                 $pages = ceil($counts/$pagecount);
                 $news = News::skip($skipnum)->take($pagecount)->where(['Flag'=>1,'NewsLabel'=>$NewsLabel])->orderBy('created_at','desc')->lists('NewsID');
                 if($NewsLabel == "hyzx"){
-                    $news = News::skip($skipnum)->take($pagecount)->where(['Flag'=>1,'NewsLabel'=>'cjzx'])->orWhere(['Flag'=>1,'NewsLabel'=>'hydt'])->lists('NewsID');
+                    $news = News::skip($skipnum)->take($pagecount)->where(['Flag'=>1,'NewsLabel'=>'cjzx'])->orWhere(['Flag'=>1,'NewsLabel'=>'hydt'])->orderBy('created_at','desc')->lists('NewsID');
                 }
             } else {
                 $news = News::where(['Flag'=>1])->where('NewsLabel','<>','czgg')->where('NewsLabel','<>','zyjt')->where('NewsLabel','<>','hyyj')->lists('NewsID');
@@ -99,7 +99,7 @@ class NewsController extends BaseController
                 $pages = ceil($counts/$pagecount);
                 $news = News::skip($skipnum)->take($pagecount)->where(['Flag'=>1,'NewsLabel'=>$NewsLabel])->orderBy('created_at','desc')->lists('NewsID');
                 if($NewsLabel == "hyzx"){
-                    $news = News::skip($skipnum)->take($pagecount)->where(['Flag'=>1,'NewsLabel'=>'cjzx'])->orWhere(['Flag'=>1,'NewsLabel'=>'hydt'])->lists('NewsID');
+                    $news = News::skip($skipnum)->take($pagecount)->where(['Flag'=>1,'NewsLabel'=>'cjzx'])->orWhere(['Flag'=>1,'NewsLabel'=>'hydt'])->orderBy('created_at','desc')->lists('NewsID');
                 }
             }
         }

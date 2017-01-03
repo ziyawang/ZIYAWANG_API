@@ -472,7 +472,7 @@ class ZLLController extends BaseController
                 $member = DB::table('T_CONFIG_MEMBER')->where('MemberID',$metadata['payid'])->first();
                 $MemberName = DB::table('T_CONFIG_MEMBER')->where('MemberID',$metadata['payid'])->pluck('MemberName');
                 $MemberYB = DB::table('T_CONFIG_MEMBER')->where('MemberID',$metadata['payid'])->pluck('YB');
-                $tmp = DB::table('T_U_MEMBER')->where(['PayName'=>$payload['payname'],'UserID'=>$user->userid])->where('Over','<>',1)->orderBy('EndTime','desc')->first();
+                $tmp = DB::table('T_U_MEMBER')->where(['PayName'=>$MemberName,'UserID'=>$user->userid])->where('Over','<>',1)->orderBy('EndTime','desc')->first();
                 if($tmp){
                     //判断,到期就不管，如果没到期
                     if(strtotime($tmp->EndTime) > time()){
@@ -521,7 +521,8 @@ class ZLLController extends BaseController
                 return "ok";
             }
             if($metadata['paytype'] == 'star'){
-               
+                DB::table('T_U_STAR')->where('OrderNumber', $OrderNumber)->update(['State'=>1,'BackNumber'=>$BackNumber, 'Channel'=>$Channel]);
+                return 'ok';
             }
         }
         $money = DB::table('T_U_MONEY')->where('OrderNumber', $OrderNumber)->first();

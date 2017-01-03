@@ -280,6 +280,9 @@ class UserController extends BaseController
             $Service->ConfirmationP2 = isset($payload['ConfirmationP2'])? $payload['ConfirmationP2']:'';
             $Service->ConfirmationP3 = isset($payload['ConfirmationP3'])? $payload['ConfirmationP3']:'';
             $Service->UserID = $UserID;
+            $Service->Size = $payload['Size'];
+            $Service->RegTime = $payload['RegTime'];
+            $Service->Founds = $payload['Founds'];
             $Service->created_at = date('Y-m-d H:i:s',time());
             $res = $Service->save();
     
@@ -339,6 +342,9 @@ class UserController extends BaseController
             $Service->ConfirmationP2 = isset($payload['ConfirmationP2'])? $payload['ConfirmationP2']:'';
             $Service->ConfirmationP3 = isset($payload['ConfirmationP3'])? $payload['ConfirmationP3']:'';
             $Service->UserID = $UserID;
+            $Service->Size = $payload['Size'];
+            $Service->RegTime = $payload['RegTime'];
+            $Service->Founds = $payload['Founds'];
             $Service->created_at = date('Y-m-d H:i:s',time());
             $res = $Service->save();
 
@@ -714,6 +720,9 @@ class UserController extends BaseController
             $Service->ConfirmationP2 = isset($payload['ConfirmationP2'])? $payload['ConfirmationP2']:'';
             $Service->ConfirmationP3 = isset($payload['ConfirmationP3'])? $payload['ConfirmationP3']:'';
             $Service->UserID = $UserID;
+            $Service->Size = $payload['Size'];
+            $Service->RegTime = $payload['RegTime'];
+            $Service->Founds = $payload['Founds'];
             $Service->created_at = date('Y-m-d H:i:s',time());
             $res = $Service->save();
     
@@ -790,6 +799,9 @@ class UserController extends BaseController
             $Service->ConfirmationP2 = isset($payload['ConfirmationP2'])? $payload['ConfirmationP2']:'';
             $Service->ConfirmationP3 = isset($payload['ConfirmationP3'])? $payload['ConfirmationP3']:'';
             $Service->UserID = $UserID;
+            $Service->Size = $payload['Size'];
+            $Service->RegTime = $payload['RegTime'];
+            $Service->Founds = $payload['Founds'];
             $Service->created_at = date('Y-m-d H:i:s',time());
             $res = $Service->save();
 
