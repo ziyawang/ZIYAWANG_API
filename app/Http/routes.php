@@ -27,7 +27,8 @@ $api = app('api.router');
 // V2 版本，公有接口，不需要登录
 $api->version('v1', ['middleware'=>['access','cross']], function ($api) {
 
-$api->get('/v2/shouye', 'App\Http\Controllers\Api\V1\ZLLController@indexProject');//获取验证码
+$api->get('/v2/shouye', 'App\Http\Controllers\Api\V1\ZLLController@indexProject');//首页
+$api->get('/upmember/{userid}','App\Http\Controllers\Api\V2\UserController@_upMember');
 
 
 //weile ie

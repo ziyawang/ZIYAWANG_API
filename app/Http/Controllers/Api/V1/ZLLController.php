@@ -472,7 +472,7 @@ class ZLLController extends BaseController
                 $member = DB::table('T_CONFIG_MEMBER')->where('MemberID',$metadata['payid'])->first();
                 $MemberName = DB::table('T_CONFIG_MEMBER')->where('MemberID',$metadata['payid'])->pluck('MemberName');
                 $MemberYB = DB::table('T_CONFIG_MEMBER')->where('MemberID',$metadata['payid'])->pluck('YB');
-                $tmp = DB::table('T_U_MEMBER')->where(['PayName'=>$MemberName,'UserID'=>$user->userid])->where('Over','<>',1)->orderBy('EndTime','desc')->first();
+                $tmp = DB::table('T_U_MEMBER')->where(['PayName'=>$MemberName,'UserID'=>$user->userid])->orderBy('EndTime','desc')->first();
                 if($tmp){
                     //判断,到期就不管，如果没到期
                     if(strtotime($tmp->EndTime) > time()){
@@ -506,7 +506,7 @@ class ZLLController extends BaseController
                         $user->Account = $user->Account + $MemberYB;
                         $user->save();
                         DB::table('T_U_MEMBER')->where('OrderNumber', $OrderNumber)->update(['PayFlag'=>1,'BackNumber'=>$BackNumber, 'Channel'=>$Channel, 'StartTime'=>$StartTime, 'EndTime'=>$EndTime, 'Over'=>0]);
-
+                        Service::where('UserID',$user->userid)->update(['Order'=>2]);
                         DB::commit();
                     } catch (Exception $e){
                         DB::rollback();

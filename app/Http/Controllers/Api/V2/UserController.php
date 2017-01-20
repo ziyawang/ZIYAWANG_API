@@ -187,6 +187,7 @@ class UserController extends BaseController
 
         $service['showlevel'] = explode(',',$service['Level']);
         $UserID = Service::where('ServiceID',$id)->pluck('UserID');
+        $this->_upMember($UserID);
         $star = ['1'=>$this->_starState($UserID,1),'2'=>$this->_starState($UserID,2),'3'=>$this->_starState($UserID,3),'4'=>$this->_starState($UserID,4),'5'=>$this->_starState($UserID,5)];
         $service['showlevelarr'] = $star;
 
